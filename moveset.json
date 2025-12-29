@@ -1,0 +1,119 @@
+{
+    "Double Leg Takedown":{
+        "parents": ["Standing"],
+        "children": ["Top Half Guard", "Top Full Guard", "Top Side Control"],
+        "area": ["Standing", "Clinch"],
+        "type": "Takedown"
+    },
+    "Top Half Guard":{
+        "parents": ["Double Leg Takedown"],
+        "children": ["Top Full Guard", "Back Taken", "Top Quarter Guard"],
+        "area": ["Ground"],
+        "type": "Guard"
+    },
+    "Top Full Guard":{
+        "parents": ["Double Leg Takedown"],
+        "children": ["Top Side Control", "Top Half Guard", "Top Quarter Guard", "Top Butterfly Hooks", "Triangle Defense", "Armbar Defense", "Standing"],
+        "area": ["Ground"],
+        "type": "Guard"
+    },
+    "Armbar":{
+        "parents": ["Mount", "Bottom Full Guard"],
+        "children": ["Bottom Side Control", "Stack Guard"],
+        "area": ["Ground"],
+        "type": "Submission"
+    },
+    "Mount":{
+        "parents": ["Top Side Control", "Top Kesa Getame", "Standing", "Top Half Guard", "Top Quarter Guard"],
+        "children": ["Bottom Side Control", "Stack Guard", "Mounted Americana", "Mounted Triangle", "Mounted Kimura", "Mounted Straight Arm Lock", "Arm Triangle"],
+        "area": ["Ground"],
+        "type": "Control"
+    },
+    "Standing":{
+        "parents": ["Top Full Guard"],
+        "children": ["Bottom Full Guard", "Double Leg Takedown"],
+        "area": ["Ground"],
+        "type": "Guard"
+    },
+    "Bottom Full Guard":{
+        "parents": ["Standing", "Mount"],
+        "children": ["Armbar", "Mount", "Bottom Half Guard", "Bottom Knee Shield", "Triangle"],
+        "area": ["Ground"],
+        "type": "Guard"
+    },
+    "Mounted Americana":{
+        "parents":["Mount"],
+        "children":["Mount", "Back Control", "S Mount", "Giftwrap"],
+        "type": "Submission"
+    },
+    "Back Control":{
+        "parents":["Mounted Americana"],
+        "children":["Rear Naked Choke", "Clock Choke", "Body Triangle"],
+        "type": "Control"
+    },
+    "Rear Naked Choke":{
+        "parents":["Back Control", "Clock Choke"],
+        "children":["Back Control", "Clock Choke"],
+        "type": "Submission"
+    },
+    "Body Triangle":{
+        "parents":["Back Control", "Straightjacket"],
+        "children":["Back Control", "Clock Choke From Back", "Straightjacket", "Rear Naked Choke"],
+        "type": "Control"
+    },
+    "Clock Choke":{
+        "parents":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket"],
+        "children":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket", "Clock Choke Finish"],
+        "type": "Submission"
+    },
+    "S Mount":{
+        "parents":["Mount"],
+        "children":["Mount"],
+        "type": "Control"
+    },
+    "Giftwrap":{
+        "parents":["Mounted Americana"],
+        "children":["Top Giftwrap Half-Guard", "Armbar", "Body Triangle", "Rear Triangle"],
+        "type": "Control"
+    },
+    "Top Giftwrap Half-Guard":{
+        "parents":["Giftwrap"],
+        "children":[],
+        "type": "Control"
+    },
+    "Arm Triangle":{
+        "parents": ["Mount"],
+        "children":["Mount", "Top Side Control", "Chair Sit Ezekiel Choke"],
+        "type": "Submission"
+    },
+    "Top Quarter Guard":{
+        "parents": ["Top Half Guard", "Mount"],
+        "children": ["Mount", "Top Half Guard"],
+        "type": "Control"
+    },
+    "Chair Sit Ezekiel Choke":{
+        "parents":["Arm Triangle"],
+        "children":["Back Control"],
+        "type": "Submission"
+    },
+    "Bottom Kesa Getame":{
+        "parents":["Bottom Side Control"],
+        "children":["Top Side Control", "S Mount", "Mount"],
+        "type": "Control"
+    },
+    "Top Bottom Side Control Headlock":{
+        "parents":["Top Side Control"],
+        "children":["S Mount", "Mount"],
+        "type": "Control"
+    },
+    "Bottom Half Guard":{
+        "parents":["Bottom Full Guard", "Bottom Side Control"],
+        "children":["Bottom Full Guard", "Bottom Side Control", "Back Control", "Top Side Control", "Kimura", "Reverse Mount Kimura"]
+    }
+    
+    
+
+}
+
+
+

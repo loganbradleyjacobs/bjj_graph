@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>BJJ Recursive Graph (Cytoscape)</title>
+    <script src="https://unpkg.com/cytoscape@3.25.2/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-dagre/cytoscape-dagre.js"></script>
+    <script src="https://unpkg.com/webcola/WebCola/cola.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-cola/cytoscape-cola.js"></script>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        background: rgba(80, 80, 80, 1);
+      }
+      #cy {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .tooltip {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        font-size: 12px;
+        font-family: sans-serif;
+        padding: 10px 10px;
+        border-radius: 10px;
+        border: 1px burlywood solid;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="cy"></div>
+
+    <script>
+      async function loadGraph() {
+        const res = await fetch("/moveset");
+        const moves_json = await res.json();
+
+        // Convert your JSON to Cytoscape elements
+        const elements = [];
+
+        // Add nodes
+        Object.keys(moves_json).forEach((key) => {
+          const move = moves_json[key];
+          elements.push({
+            data: {
+              id: key,
+              label: key,
+              path: move.path,
+              parents: move.parents,
+              children: move.children,
+              area: move.area,
+              type: move.type,
+            },
+          });
+        });
+
+        // Add edges
+        Object.keys(moves_json).forEach((key) => {
+          const move = moves_json[key];
+          if (move.children) {
+            move.children.forEach((child) => {
+              // Only add edge if child exists
+              if (moves_json[child]) {
+                elements.push({
+                  data: { source: key, target: child },
+                });
+              }
+            });
+          }
+        });
+
+        // Initialize Cytoscape
+        const cy = cytoscape({
+          container: document.getElementById("cy"),
+          elements: elements,
+          style: [
+            {
+              selector: "node",
+              style: {
+                label: "data(label)",
+                "background-color": (ele) => {
+                  switch (ele.data("type")) {
+                    // Settings: Node Color
+                    case "Guard":
+                      return "#1f77b4";
+                    case "Pass":
+                      return "#ff7f0e";
+                    case "Submission":
+                      return "#2ca02c";
+                    case "Submission Defense":
+                      return "#d62728";
+                    case "Takedown":
+                      return "#FF8E1F";
+                    case "Sweep":
+                      return "#4caf50";
+                    default:
+                      return "#888";
+                  }
+                },
+                // node size scales with number of children (or num_grips fallback)
+                width: (ele) => {
+                  const childrenCount = ele.data("children")
+                    ? ele.data("children").length
+                    : 1;
+                  const parentCount = ele.data("parent")
+                    ? ele.data("parent").length
+                    : 1;
+                  return 30 + (childrenCount + parentCount) * 5;
+                },
+                height: (ele) => {
+                  return ele.width();
+                },
+                // font size scales with number of grips (or children count)
+                "font-size": (ele) => {
+                  return ele.width() * 0.2;
+                },
+                color: "#fff",
+                "text-valign": "center",
+                "text-halign": "center",
+                "text-wrap": "wrap",
+                "text-max-width": "50%",
+                // Task: make font stay inside bubbles
+              },
+            },
+            {
+              selector: "edge",
+              style: {
+                width: 2,
+                "line-color": "#fff",
+                "target-arrow-color": "#fff",
+                "target-arrow-shape": "triangle",
+                "arrow-scale": 2,
+                "curve-style": "straight",
+
+                // Add padding so arrows stop outside node bounds
+                "source-endpoint": "outside-to-node",
+                "target-endpoint": "outside-to-node",
+
+                // Use these to add extra space from node border if needed
+                "source-distance-from-node": 5,
+                "target-distance-from-node": 5,
+              },
+            },
+          ],
+          layout: { name: "preset" }, // don't auto-layout, we'll run our own below
+          /*
+          layout: {
+            name: "concentric",
+            animate: true,
+            concentric: function (node) {
+              // More edges = closer to center
+              return node.degree();
+            },
+            levelWidth: function (nodes) {
+              // spacing between levels
+              return nodes.maxDegree() / 5;
+            },
+            padding: 50,
+          },
+          */
+          /*
+          layout: {
+            // Settings: Layout
+            // breadthfirst, avsdf, concentric, dagre, elk, klay, fcose, cola, cise,
+            name: "concentric",
+            animate: true,
+            randomize: false, // true = avoids stuck layout if nodes overlap
+            maxSimulationTime: 2000, // let cola run longer
+            fit: true, // fit graph to viewport
+            padding: 1,
+            nodeSpacing: function (node) {
+              return 5;
+            },
+            centerGraph: true,
+            flow: { axis: "xy", minSeparation: 10 },
+            handleDisconnected: true,
+            avoidOverlap: true,
+          },
+          */
+        });
+
+        // First run concentric to seed positions
+        cy.layout({
+          name: "concentric",
+          concentric: (n) => n.degree(),
+          levelWidth: () => 1,
+          padding: 50,
+        }).run();
+
+        // Then refine with cola
+        cy.layout({
+          name: "cola",
+          animate: true,
+          randomize: false,
+          maxSimulationTime: 3000,
+          fit: true,
+          padding: 20,
+          nodeSpacing: () => 20,
+          avoidOverlap: true,
+        }).run();
+
+        const maxWidth = 3;
+        const minScale = 0.5;
+
+        function updateEdgeWidths() {
+          const z = cy.zoom();
+          // thinner when zooming in; clamp between min/max
+          const width = Math.min(maxWidth, maxWidth / z);
+          const arrowScale = Math.min(1, width);
+          cy.batch(() => {
+            cy.edges().forEach((e) => e.style("width", width));
+            cy.edges().forEach((e) => e.style("arrow-scale", arrowScale));
+          });
+        }
+
+        function updateLabelSizing() {
+          const z = cy.zoom();
+          cy.nodes().forEach((n) => {
+            const w = n.width();
+            n.style({
+              "font-size": Math.max(4, Math.min(28, 16/z)),
+              "text-max-width": w * 0.2
+            });
+          });
+        }
+
+        // Initial call
+        updateEdgeWidths();
+        updateLabelSizing();
+
+        // Enable zoom/pan
+        cy.userZoomingEnabled(true);
+        cy.userPanningEnabled(true);
+
+        // Optional: node click tooltip
+        const tooltip = document.createElement("div");
+        tooltip.className = "tooltip";
+        document.body.appendChild(tooltip);
+
+        tooltip.style.display = "none";
+
+        cy.on("mouseover", "node", (evt) => {
+          const node = evt.target;
+          // Settings: Tooltip Text
+          tooltip.innerHTML = `
+                <strong>${node.data("label")}</strong><br>
+                Parents: ${node.data("parents").join(", ")}<br>
+                Children: ${node.data("children").join(", ")}<br>
+                Area: ${node.data("area")}<br>
+                Type: ${node.data("type")}
+              `;
+          tooltip.style.display = "block";
+        });
+
+        cy.on("mousemove", (evt) => {
+          tooltip.style.left = evt.originalEvent.pageX + 10 + "px";
+          tooltip.style.top = evt.originalEvent.pageY + 10 + "px";
+        });
+
+        cy.on("mouseout", "node", () => {
+          tooltip.style.display = "none";
+        });
+
+        cy.on("zoom", updateEdgeWidths);
+        cy.on("zoom", updateLabelSizing);
+      }
+
+      loadGraph();
+    </script>
+  </body>
+</html>
