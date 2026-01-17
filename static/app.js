@@ -1,242 +1,345 @@
-async function loadGraph() {
-  const layoutSelect = document.getElementById("layoutMode");
-  const edgeStyleSelect = document.getElementById("edgeStyleMode");
-  const res = await fetch("/moveset");
-  const moves_json = await res.json();
+// Configuration module
+const CONFIG = {
+  edgeColor: "#AAFDE9",
+  maxEdgeWidth: 3,
+  minArrowScale: 0.5,
+  nodeColors: {
+    "Guard": "#1f77b4",
+    "Pass": "#ff7f0e",
+    "Submission": "#2ca02c",
+    "Submission Defense": "#d62728",
+    "Takedown": "#FF8E1F",
+    "Sweep": "#4caf50",
+    "default": "#888"
+  }
+};
 
-  // Convert your JSON to Cytoscape elements
-  const elements = [];
-
-  // Add nodes
-  Object.keys(moves_json).forEach((key) => {
-    const move = moves_json[key];
-    elements.push({
-      data: {
-        id: key,
-        label: key,
-        path: move.path,
-        parents: move.parents,
-        children: move.children,
-        area: move.area,
-        type: move.type,
-      },
-    });
-  });
-
-  // Add edges
-  Object.keys(moves_json).forEach((key) => {
-    const move = moves_json[key];
-    if (move.children) {
-      move.children.forEach((child) => {
-        // Only add edge if child exists
-        if (moves_json[child]) {
-          elements.push({
-            data: { source: key, target: child },
-          });
-        }
+// Data processing module
+class GraphDataProcessor {
+  static processMovesetData(moveset) {
+    const elements = [];
+    
+    // Add nodes
+    Object.keys(moveset).forEach(key => {
+      const move = moveset[key];
+      elements.push({
+        data: {
+          id: key,
+          label: key,
+          path: move.path,
+          parents: move.parents,
+          children: move.children,
+          area: move.area,
+          type: move.type,
+        },
       });
-    }
-  });
+    });
 
-  const EDGE_COLOR = "#AAFDE9";
+    // Add edges
+    Object.keys(moveset).forEach(key => {
+      const move = moveset[key];
+      if (move.children) {
+        move.children.forEach(child => {
+          if (moveset[child]) {
+            elements.push({
+              data: { source: key, target: child },
+            });
+          }
+        });
+      }
+    });
 
-  // Initialize Cytoscape
-  const cy = cytoscape({
-    container: document.getElementById("cy"),
-    elements: elements,
-    style: [
-      {
-        selector: "node",
-        style: {
-          label: "data(label)",
-          "background-color": (ele) => {
-            switch (ele.data("type")) {
-              // Settings: Node Color
-              case "Guard":
-                return "#1f77b4";
-              case "Pass":
-                return "#ff7f0e";
-              case "Submission":
-                return "#2ca02c";
-              case "Submission Defense":
-                return "#d62728";
-              case "Takedown":
-                return "#FF8E1F";
-              case "Sweep":
-                return "#4caf50";
-              default:
-                return "#888";
-            }
-          },
-          // node size scales with number of children (or num_grips fallback)
-          width: (ele) => {
-            const childrenCount = ele.data("children")
-              ? ele.data("children").length
-              : 1;
-            const parentCount = ele.data("parent")
-              ? ele.data("parent").length
-              : 1;
-            return 30 + (childrenCount + parentCount) * 5;
-          },
-          height: (ele) => {
-            return ele.width();
-          },
-          // font size scales with number of grips (or children count)
-          "font-size": (ele) => {
-            return ele.width() * 0.2;
-          },
-          color: "#fff",
-          "text-valign": "center",
-          "text-halign": "center",
-          "text-wrap": "wrap",
-          "text-max-width": "50%",
-          // Task: make font stay inside bubbles
-        },
-      },
-      {
-        selector: "edge",
-        style: {
-          width: 2,
-          "line-color": EDGE_COLOR,
-          "target-arrow-color": EDGE_COLOR,
-          "target-arrow-shape": "triangle",
-          "arrow-scale": 2,
-          "curve-style": "straight",
+    return elements;
+  }
+}
 
-          // Add padding so arrows stop outside node bounds
-          "source-endpoint": "outside-to-node",
-          "target-endpoint": "outside-to-node",
+// Layout module
+class GraphLayoutManager {
+  constructor(cy) {
+    this.cy = cy;
+  }
 
-          // Use these to add extra space from node border if needed
-          "source-distance-from-node": 5,
-          "target-distance-from-node": 5,
-        },
-      },
-    ],
-    layout: { name: "preset" }, // don't auto-layout, we'll run our own below
-  });
-
-  function runLayout(mode) {
+  runLayout(mode) {
     if (mode === "concentric") {
-      cy.layout({
-        name: "concentric",
-        concentric: (n) => n.degree(),
-        levelWidth: () => 1,
-        padding: 50,
-      }).run();
+      this._applyConcentricLayout();
       return;
     }
 
     // First run concentric to seed positions
-    cy.layout({
+    this._applyConcentricLayout();
+
+    if (mode === "dagre") {
+      this._applyDagreLayout();
+    } else {
+      this._applyColaLayout();
+    }
+  }
+
+  _applyConcentricLayout() {
+    this.cy.layout({
       name: "concentric",
       concentric: (n) => n.degree(),
       levelWidth: () => 1,
       padding: 50,
     }).run();
-
-    if (mode === "dagre") {
-      cy.layout({
-        name: "dagre",
-        rankDir: "TB",
-        rankSep: 50,
-        nodeSep: 30,
-        edgeSep: 10,
-        fit: true,
-        padding: 20,
-      }).run();
-    } else {
-      // Then refine with cola
-      cy.layout({
-        name: "cola",
-        animate: true,
-        randomize: false,
-        maxSimulationTime: 3000,
-        fit: true,
-        padding: 20,
-        nodeSpacing: () => 20,
-        avoidOverlap: true,
-      }).run();
-    }
   }
 
-  runLayout(layoutSelect.value);
-  layoutSelect.addEventListener("change", () => {
-    runLayout(layoutSelect.value);
-  });
+  _applyDagreLayout() {
+    this.cy.layout({
+      name: "dagre",
+      rankDir: "TB",
+      rankSep: 50,
+      nodeSep: 30,
+      edgeSep: 10,
+      fit: true,
+      padding: 20,
+    }).run();
+  }
 
-  const maxWidth = 3;
-  const minScale = 0.5;
+  _applyColaLayout() {
+    this.cy.layout({
+      name: "cola",
+      animate: true,
+      randomize: false,
+      maxSimulationTime: 3000,
+      fit: true,
+      padding: 20,
+      nodeSpacing: () => 20,
+      avoidOverlap: true,
+    }).run();
+  }
+}
 
-  function updateEdgeWidths() {
-    const z = cy.zoom();
-    // thinner when zooming in; clamp between min/max
-    const width = Math.min(maxWidth, maxWidth / z);
+// Style module
+class GraphStyleManager {
+  constructor(cy) {
+    this.cy = cy;
+  }
+
+  getBaseStyles() {
+    return [
+      {
+        selector: "node",
+        style: this._getNodeStyles()
+      },
+      {
+        selector: "edge",
+        style: this._getEdgeStyles()
+      }
+    ];
+  }
+
+  _getNodeStyles() {
+    return {
+      label: "data(label)",
+      "background-color": (ele) => CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
+      width: (ele) => this._calculateNodeWidth(ele),
+      height: (ele) => ele.width(),
+      "font-size": (ele) => ele.width() * 0.2,
+      color: "#fff",
+      "text-valign": "center",
+      "text-halign": "center",
+      "text-wrap": "wrap",
+      "text-max-width": "50%",
+    };
+  }
+
+  _getEdgeStyles() {
+    return {
+      width: 2,
+      "line-color": CONFIG.edgeColor,
+      "target-arrow-color": CONFIG.edgeColor,
+      "target-arrow-shape": "triangle",
+      "arrow-scale": 2,
+      "curve-style": "straight",
+      "source-endpoint": "outside-to-node",
+      "target-endpoint": "outside-to-node",
+      "source-distance-from-node": 5,
+      "target-distance-from-node": 5,
+    };
+  }
+
+  _calculateNodeWidth(ele) {
+    const childrenCount = ele.data("children") ? ele.data("children").length : 1;
+    const parentCount = ele.data("parents") ? ele.data("parents").length : 1;
+    return 30 + (childrenCount + parentCount) * 5;
+  }
+
+  updateEdgeWidths() {
+    const zoom = this.cy.zoom();
+    const width = Math.min(CONFIG.maxEdgeWidth, CONFIG.maxEdgeWidth / zoom);
     const arrowScale = Math.min(1, width);
-    cy.batch(() => {
-      cy.edges().forEach((e) => e.style("width", width));
-      cy.edges().forEach((e) => e.style("arrow-scale", arrowScale));
-    });
-  }
-
-  function updateEdgeStyle(mode) {
-    cy.edges().style("curve-style", mode);
-  }
-
-  function updateLabelSizing() {
-    const z = cy.zoom();
-    cy.nodes().forEach((n) => {
-      const w = n.width();
-      n.style({
-        "font-size": Math.max(4, Math.min(w * 0.2, 16 / z)),
+    
+    this.cy.batch(() => {
+      this.cy.edges().forEach(edge => {
+        edge.style("width", width);
+        edge.style("arrow-scale", arrowScale);
       });
     });
   }
 
-  // Initial call
-  updateEdgeWidths();
-  updateLabelSizing();
-  updateEdgeStyle(edgeStyleSelect.value);
+  updateEdgeStyle(mode) {
+    this.cy.edges().style("curve-style", mode);
+  }
 
-  // Enable zoom/pan
-  cy.userZoomingEnabled(true);
-  cy.userPanningEnabled(true);
-
-  // Optional: node click tooltip
-  const tooltip = document.createElement("div");
-  tooltip.className = "tooltip";
-  document.body.appendChild(tooltip);
-  tooltip.style.display = "none";
-
-  cy.on("mouseover", "node", (evt) => {
-    const node = evt.target;
-    // Settings: Tooltip Text
-    tooltip.innerHTML = `
-          <strong>${node.data("label")}</strong><br>
-          Parents: ${node.data("parents").join(", ")}<br>
-          Children: ${node.data("children").join(", ")}<br>
-          Area: ${node.data("area")}<br>
-          Type: ${node.data("type")}
-        `;
-    tooltip.style.display = "block";
-    console.log(evt);
-  });
-
-  cy.on("mousemove", (evt) => {
-    tooltip.style.left = evt.originalEvent.pageX + 10 + "px";
-    tooltip.style.top = evt.originalEvent.pageY + 10 + "px";
-  });
-
-  cy.on("mouseout", "node", () => {
-    tooltip.style.display = "none";
-  });
-
-  cy.on("zoom", updateEdgeWidths);
-  cy.on("zoom", updateLabelSizing);
-
-  edgeStyleSelect.addEventListener("change", () => {
-    updateEdgeStyle(edgeStyleSelect.value);
-  });
+  updateLabelSizing() {
+    const zoom = this.cy.zoom();
+    this.cy.nodes().forEach(node => {
+      const width = node.width();
+      node.style({
+        "font-size": Math.max(4, Math.min(width * 0.2, 16 / zoom)),
+      });
+    });
+  }
 }
 
+// Tooltip module
+class GraphTooltipManager {
+  constructor(cy) {
+    this.cy = cy;
+    this.tooltip = this._createTooltip();
+    this._setupEventListeners();
+  }
+
+  _createTooltip() {
+    const tooltip = document.createElement("div");
+    tooltip.className = "tooltip";
+    tooltip.style.display = "none";
+    document.body.appendChild(tooltip);
+    return tooltip;
+  }
+
+  _setupEventListeners() {
+    this.cy.on("mouseover", "node", (evt) => this._showTooltip(evt));
+    this.cy.on("mousemove", (evt) => this._moveTooltip(evt));
+    this.cy.on("mouseout", "node", () => this._hideTooltip());
+  }
+
+  _showTooltip(evt) {
+    const node = evt.target;
+    this.tooltip.innerHTML = `
+      <strong>${node.data("label")}</strong><br>
+      Parents: ${node.data("parents").join(", ")}<br>
+      Children: ${node.data("children").join(", ")}<br>
+      Area: ${node.data("area")}<br>
+      Type: ${node.data("type")}
+    `;
+    this.tooltip.style.display = "block";
+  }
+
+  _moveTooltip(evt) {
+    this.tooltip.style.left = `${evt.originalEvent.pageX + 10}px`;
+    this.tooltip.style.top = `${evt.originalEvent.pageY + 10}px`;
+  }
+
+  _hideTooltip() {
+    this.tooltip.style.display = "none";
+  }
+}
+
+// Interaction module
+class GraphInteractionManager {
+  constructor(cy, layoutSelect, edgeStyleSelect) {
+    this.cy = cy;
+    this.layoutSelect = layoutSelect;
+    this.edgeStyleSelect = edgeStyleSelect;
+    this.layoutManager = new GraphLayoutManager(cy);
+    this.styleManager = new GraphStyleManager(cy);
+    this._setupEventListeners();
+  }
+
+  _setupEventListeners() {
+    // Layout changes
+    this.layoutSelect.addEventListener("change", () => {
+      this.layoutManager.runLayout(this.layoutSelect.value);
+    });
+
+    // Edge style changes
+    this.edgeStyleSelect.addEventListener("change", () => {
+      this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value);
+    });
+
+    // Zoom events
+    this.cy.on("zoom", () => {
+      this.styleManager.updateEdgeWidths();
+      this.styleManager.updateLabelSizing();
+    });
+  }
+
+  enableInteractions() {
+    this.cy.userZoomingEnabled(true);
+    this.cy.userPanningEnabled(true);
+  }
+}
+
+// Main Graph class
+class Graph {
+  constructor(containerId, layoutSelectId, edgeStyleSelectId) {
+    this.containerId = containerId;
+    this.layoutSelect = document.getElementById(layoutSelectId);
+    this.edgeStyleSelect = document.getElementById(edgeStyleSelectId);
+    this.cy = null;
+    this.layoutManager = null;
+    this.styleManager = null;
+    this.interactionManager = null;
+    this.tooltipManager = null;
+  }
+
+  async initialize() {
+    try {
+      // Fetch and process data
+      const moveset = await this._fetchMovesetData();
+      const elements = GraphDataProcessor.processMovesetData(moveset);
+
+      // Initialize Cytoscape
+      this.cy = this._createCytoscapeInstance(elements);
+
+      // Initialize managers
+      this.layoutManager = new GraphLayoutManager(this.cy);
+      this.styleManager = new GraphStyleManager(this.cy);
+      this.interactionManager = new GraphInteractionManager(
+        this.cy, 
+        this.layoutSelect, 
+        this.edgeStyleSelect
+      );
+      this.tooltipManager = new GraphTooltipManager(this.cy);
+
+      // Apply initial layout and styles
+      this.layoutManager.runLayout(this.layoutSelect.value);
+      this.styleManager.updateEdgeWidths();
+      this.styleManager.updateLabelSizing();
+      this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value);
+      this.interactionManager.enableInteractions();
+
+    } catch (error) {
+      console.error("Failed to initialize graph:", error);
+      throw error;
+    }
+  }
+
+  async _fetchMovesetData() {
+    const response = await fetch("/moveset");
+    if (!response.ok) {
+      throw new Error(`Failed to fetch moveset data: ${response.status}`);
+    }
+    return await response.json();
+  }
+
+  _createCytoscapeInstance(elements) {
+    return cytoscape({
+      container: document.getElementById(this.containerId),
+      elements: elements,
+      style: this.styleManager.getBaseStyles(),
+      layout: { name: "preset" }
+    });
+  }
+}
+
+// Main initialization
+async function loadGraph() {
+  const graph = new Graph("cy", "layoutMode", "edgeStyleMode");
+  await graph.initialize();
+}
+
+// Start the graph
 loadGraph();

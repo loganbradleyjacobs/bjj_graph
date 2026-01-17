@@ -109,10 +109,12 @@
     "Bottom Half Guard":{
         "parents":["Bottom Full Guard", "Bottom Side Control"],
         "children":["Bottom Full Guard", "Bottom Side Control", "Back Control", "Top Side Control", "Kimura", "Reverse Mount Kimura"]
+    },
+    "Top Side Control":{
+        "parents":["Top Half Guard", "Top North South"],
+        "children":["Kimura", "Straight Arm Lock"],
+        "type": "Control"
     }
-    
-    
-
 }
 
 
