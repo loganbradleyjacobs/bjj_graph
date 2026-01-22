@@ -6,10 +6,9 @@ const CONFIG = {
   nodeColors: {
     "Guard": "#1f77b4",
     "Pass": "#ff7f0e",
-    "Submission": "#2ca02c",
-    "Submission Defense": "#d62728",
-    "Takedown": "#FF8E1F",
-    "Sweep": "#4caf50",
+    "Submission": "#d62728",
+    "Takedown": "#DEB887",
+    "Control": "#5AFA2D",
     "default": "#888"
   },
   debug: true
@@ -281,6 +280,17 @@ class GraphInteractionManager {
     this.cy.on("zoom", () => {
       this.styleManager.updateEdgeWidths();
       this.styleManager.updateLabelSizing();
+    });
+
+    this.cy.on("tap", "node", (evt) => {
+      const node = evt.target;
+      const fractionOfViewport = 0.15
+      this.cy.animate({
+        center: { eles: node },
+        zoom: this.cy.container().clientWidth * fractionOfViewport / node.width(),
+        duration: 300,
+        easing: "ease-in-out"
+      });
     });
   }
 

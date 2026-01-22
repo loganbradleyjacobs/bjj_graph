@@ -96,6 +96,11 @@
         "children":["Back Control"],
         "type": "Submission"
     },
+    "Top Kesa Getame":{
+        "parents":["Top Side Control"],
+        "children":["Mount"],
+        "type": "Control"
+    },
     "Bottom Kesa Getame":{
         "parents":["Bottom Side Control"],
         "children":["Top Side Control", "S Mount", "Mount"],
@@ -108,11 +113,22 @@
     },
     "Bottom Half Guard":{
         "parents":["Bottom Full Guard", "Bottom Side Control"],
-        "children":["Bottom Full Guard", "Bottom Side Control", "Back Control", "Top Side Control", "Kimura", "Reverse Mount Kimura"]
+        "children":["Bottom Full Guard", "Bottom Side Control", "Back Control", "Top Side Control", "Kimura", "Reverse Mount Kimura"],
+        "type": "Control"
     },
     "Top Side Control":{
         "parents":["Top Half Guard", "Top North South"],
         "children":["Kimura", "Straight Arm Lock"],
+        "type": "Control"
+    },
+    "Bottom Side Control":{
+        "parents":["Bottom Half Guard", "Bottom Kesa Getame"],
+        "children":["Bottom Half Guard"],
+        "type": "Control"
+    },
+    "Bottom Mount":{
+        "parents":["Bottom Side Control"],
+        "children":["Top Full Guard"],
         "type": "Control"
     }
 }
