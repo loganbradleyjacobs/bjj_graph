@@ -11,7 +11,8 @@ const CONFIG = {
     "Takedown": "#FF8E1F",
     "Sweep": "#4caf50",
     "default": "#888"
-  }
+  },
+  debug: true
 };
 
 // Data processing module
@@ -28,8 +29,10 @@ class GraphDataProcessor {
           path: move.path || [],
           parents: move.parents || [],
           children: move.children || [],
-          area: move.area || [],
-          type: move.type || "default",
+          area: move.area,
+          type: move.type,
+          image: move.image || `/static/images/${key.replace(/\s+/g, "_").toLowerCase()}.png`,
+          video: move.video,
         },
       });
     });
@@ -65,6 +68,12 @@ class GraphStyleManager {
         style: this._getNodeStyles()
       },
       {
+        selector: "node.debug-hide-label",
+        style: {
+          label: ""
+        }
+      },
+      {
         selector: "edge",
         style: this._getEdgeStyles()
       }
@@ -73,16 +82,31 @@ class GraphStyleManager {
 
   _getNodeStyles() {
     return {
-      label: "data(label)",
-      "background-color": (ele) => CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
-      width: (ele) => this._calculateNodeWidth(ele),
-      height: (ele) => ele.width(),
+      //text
+      label: (ele) => ele.data("label"),
       "font-size": (ele) => ele.width() * 0.2,
       color: "#fff",
       "text-valign": "center",
       "text-halign": "center",
       "text-wrap": "wrap",
       "text-max-width": "50%",
+
+      //node
+      width: (ele) => this._calculateNodeWidth(ele),
+      height: (ele) => ele.width(),
+      "background-color": (ele) => CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
+      
+      // image
+      "shape": "ellipse",
+      "background-image": (ele) => ele.data("image") || null,
+      "background-fit": "cover",
+      "background-clip": "node",
+      "background-width": "30%",
+      "background-height": "30%",   
+
+      //border
+      "border-width": 4,
+      "border-color": (ele) => CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
     };
   }
 
@@ -207,6 +231,7 @@ class GraphTooltipManager {
     this.cy.on("mouseover", "node", evt => this._showTooltip(evt));
     this.cy.on("mousemove", evt => this._moveTooltip(evt));
     this.cy.on("mouseout", "node", () => this._hideTooltip());
+    this.cy.on("tap", "node", evt => CONFIG.debug && console.log(`Data for clicked node: ${evt.target.id()}`, evt.target.data()))
   }
 
   _showTooltip(evt) {
@@ -216,7 +241,9 @@ class GraphTooltipManager {
       Parents: ${node.data("parents").join(", ")}<br>
       Children: ${node.data("children").join(", ")}<br>
       Area: ${node.data("area")}<br>
-      Type: ${node.data("type")}
+      Type: ${node.data("type")}<br>
+      Image: ${node.data("image")}<br>
+      Video: ${node.data("video")}
     `;
     this.tooltip.style.display = "block";
   }
@@ -308,6 +335,17 @@ class Graph {
       this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value);
       this.interactionManager.enableInteractions();
 
+      // hook up show label checkbox
+      const showLabelCheckbox = document.getElementById("showLabelCheckbox")
+      showLabelCheckbox.addEventListener("change", () => {
+        const show = showLabelCheckbox.checked;
+        this.cy.nodes().forEach(node => {
+          if (show) node.removeClass("debug-hide-label");
+          else node.addClass("debug-hide-label");
+        });
+      });
+
+
     } catch (err) {
       console.error("Failed to initialize graph:", err);
     }
@@ -324,7 +362,4 @@ class Graph {
 async function loadGraph() {
   const graph = new Graph("cy", "layoutMode", "edgeStyleMode");
   await graph.initialize();
-}
-
-// Start
-loadGraph();
+} loadGraph();
