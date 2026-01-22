@@ -3,7 +3,7 @@
   --ui-text: #fff;
   --ui-font: 12px sans-serif;
   --ui-border: 1px burlywood solid;
-  --page-bg: rgba(80, 80, 80, 1);
+  --page-bg: rgba(80, 80, 160, 1);
 }
 html,
 body {

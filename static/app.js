@@ -18,19 +18,18 @@ const CONFIG = {
 class GraphDataProcessor {
   static processMovesetData(moveset) {
     const elements = [];
-    
-    // Add nodes
+
     Object.keys(moveset).forEach(key => {
       const move = moveset[key];
       elements.push({
         data: {
           id: key,
           label: key,
-          path: move.path,
-          parents: move.parents,
-          children: move.children,
-          area: move.area,
-          type: move.type,
+          path: move.path || [],
+          parents: move.parents || [],
+          children: move.children || [],
+          area: move.area || [],
+          type: move.type || "default",
         },
       });
     });
@@ -53,64 +52,7 @@ class GraphDataProcessor {
   }
 }
 
-// Layout module
-class GraphLayoutManager {
-  constructor(cy) {
-    this.cy = cy;
-  }
-
-  runLayout(mode) {
-    if (mode === "concentric") {
-      this._applyConcentricLayout();
-      return;
-    }
-
-    // First run concentric to seed positions
-    this._applyConcentricLayout();
-
-    if (mode === "dagre") {
-      this._applyDagreLayout();
-    } else {
-      this._applyColaLayout();
-    }
-  }
-
-  _applyConcentricLayout() {
-    this.cy.layout({
-      name: "concentric",
-      concentric: (n) => n.degree(),
-      levelWidth: () => 1,
-      padding: 50,
-    }).run();
-  }
-
-  _applyDagreLayout() {
-    this.cy.layout({
-      name: "dagre",
-      rankDir: "TB",
-      rankSep: 50,
-      nodeSep: 30,
-      edgeSep: 10,
-      fit: true,
-      padding: 20,
-    }).run();
-  }
-
-  _applyColaLayout() {
-    this.cy.layout({
-      name: "cola",
-      animate: true,
-      randomize: false,
-      maxSimulationTime: 3000,
-      fit: true,
-      padding: 20,
-      nodeSpacing: () => 20,
-      avoidOverlap: true,
-    }).run();
-  }
-}
-
-// Style module
+// Style manager
 class GraphStyleManager {
   constructor(cy) {
     this.cy = cy;
@@ -152,16 +94,12 @@ class GraphStyleManager {
       "target-arrow-shape": "triangle",
       "arrow-scale": 2,
       "curve-style": "straight",
-      "source-endpoint": "outside-to-node",
-      "target-endpoint": "outside-to-node",
-      "source-distance-from-node": 5,
-      "target-distance-from-node": 5,
     };
   }
 
   _calculateNodeWidth(ele) {
-    const childrenCount = ele.data("children") ? ele.data("children").length : 1;
-    const parentCount = ele.data("parents") ? ele.data("parents").length : 1;
+    const childrenCount = ele.data("children")?.length || 1;
+    const parentCount = ele.data("parents")?.length || 1;
     return 30 + (childrenCount + parentCount) * 5;
   }
 
@@ -169,7 +107,7 @@ class GraphStyleManager {
     const zoom = this.cy.zoom();
     const width = Math.min(CONFIG.maxEdgeWidth, CONFIG.maxEdgeWidth / zoom);
     const arrowScale = Math.min(1, width);
-    
+
     this.cy.batch(() => {
       this.cy.edges().forEach(edge => {
         edge.style("width", width);
@@ -193,7 +131,63 @@ class GraphStyleManager {
   }
 }
 
-// Tooltip module
+// Layout manager
+class GraphLayoutManager {
+  constructor(cy) {
+    this.cy = cy;
+  }
+
+  runLayout(mode) {
+    if (mode === "concentric") {
+      this._applyConcentricLayout();
+      return;
+    }
+
+    this._applyConcentricLayout(); // seed positions first
+
+    if (mode === "dagre") {
+      this._applyDagreLayout();
+    } else {
+      this._applyColaLayout();
+    }
+  }
+
+  _applyConcentricLayout() {
+    this.cy.layout({
+      name: "concentric",
+      concentric: n => n.degree(),
+      levelWidth: () => 1,
+      padding: 50,
+    }).run();
+  }
+
+  _applyDagreLayout() {
+    this.cy.layout({
+      name: "dagre",
+      rankDir: "TB",
+      rankSep: 50,
+      nodeSep: 30,
+      edgeSep: 10,
+      fit: true,
+      padding: 20,
+    }).run();
+  }
+
+  _applyColaLayout() {
+    this.cy.layout({
+      name: "cola",
+      animate: true,
+      randomize: false,
+      maxSimulationTime: 3000,
+      fit: true,
+      padding: 20,
+      nodeSpacing: () => 20,
+      avoidOverlap: true,
+    }).run();
+  }
+}
+
+// Tooltip manager
 class GraphTooltipManager {
   constructor(cy) {
     this.cy = cy;
@@ -210,8 +204,8 @@ class GraphTooltipManager {
   }
 
   _setupEventListeners() {
-    this.cy.on("mouseover", "node", (evt) => this._showTooltip(evt));
-    this.cy.on("mousemove", (evt) => this._moveTooltip(evt));
+    this.cy.on("mouseover", "node", evt => this._showTooltip(evt));
+    this.cy.on("mousemove", evt => this._moveTooltip(evt));
     this.cy.on("mouseout", "node", () => this._hideTooltip());
   }
 
@@ -237,7 +231,7 @@ class GraphTooltipManager {
   }
 }
 
-// Interaction module
+// Interaction manager
 class GraphInteractionManager {
   constructor(cy, layoutSelect, edgeStyleSelect) {
     this.cy = cy;
@@ -249,17 +243,14 @@ class GraphInteractionManager {
   }
 
   _setupEventListeners() {
-    // Layout changes
     this.layoutSelect.addEventListener("change", () => {
       this.layoutManager.runLayout(this.layoutSelect.value);
     });
 
-    // Edge style changes
     this.edgeStyleSelect.addEventListener("change", () => {
       this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value);
     });
 
-    // Zoom events
     this.cy.on("zoom", () => {
       this.styleManager.updateEdgeWidths();
       this.styleManager.updateLabelSizing();
@@ -287,19 +278,25 @@ class Graph {
 
   async initialize() {
     try {
-      // Fetch and process data
       const moveset = await this._fetchMovesetData();
       const elements = GraphDataProcessor.processMovesetData(moveset);
 
-      // Initialize Cytoscape
-      this.cy = this._createCytoscapeInstance(elements);
+      // Initialize Cytoscape first
+      this.cy = cytoscape({
+        container: document.getElementById(this.containerId),
+        elements: elements,
+        style: [], // start empty
+        layout: { name: "preset" }
+      });
 
-      // Initialize managers
-      this.layoutManager = new GraphLayoutManager(this.cy);
+      // Now style manager can reference cy
       this.styleManager = new GraphStyleManager(this.cy);
+      this.cy.style().fromJson(this.styleManager.getBaseStyles()).update();
+
+      this.layoutManager = new GraphLayoutManager(this.cy);
       this.interactionManager = new GraphInteractionManager(
-        this.cy, 
-        this.layoutSelect, 
+        this.cy,
+        this.layoutSelect,
         this.edgeStyleSelect
       );
       this.tooltipManager = new GraphTooltipManager(this.cy);
@@ -311,35 +308,23 @@ class Graph {
       this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value);
       this.interactionManager.enableInteractions();
 
-    } catch (error) {
-      console.error("Failed to initialize graph:", error);
-      throw error;
+    } catch (err) {
+      console.error("Failed to initialize graph:", err);
     }
   }
 
   async _fetchMovesetData() {
     const response = await fetch("/moveset");
-    if (!response.ok) {
-      throw new Error(`Failed to fetch moveset data: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Failed to fetch moveset: ${response.status}`);
     return await response.json();
-  }
-
-  _createCytoscapeInstance(elements) {
-    return cytoscape({
-      container: document.getElementById(this.containerId),
-      elements: elements,
-      style: this.styleManager.getBaseStyles(),
-      layout: { name: "preset" }
-    });
   }
 }
 
-// Main initialization
+// Initialize graph
 async function loadGraph() {
   const graph = new Graph("cy", "layoutMode", "edgeStyleMode");
   await graph.initialize();
 }
 
-// Start the graph
+// Start
 loadGraph();
