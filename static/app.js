@@ -8,7 +8,7 @@ const CONFIG = {
     "Pass": "#ff7f0e",
     "Submission": "#d62728",
     "Takedown": "#DEB887",
-    "Control": "#5AFA2D",
+    "Control": "#379a1c",
     "default": "#888"
   },
   debug: true
@@ -354,6 +354,59 @@ class Graph {
           else node.addClass("debug-hide-label");
         });
       });
+
+      const nodeColorPicker = document.getElementById("nodeColorPicker");
+      nodeColorPicker.addEventListener("input", (e) => {
+        const color = e.target.value;
+        this.cy.nodes().style({
+          "background-color": color,
+          "border-color": color
+        });
+      });
+
+      document.getElementById("resetNodeColors").addEventListener("click", () => {
+        this.cy.nodes().style({
+          "background-color": (ele) =>
+            CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
+          "border-color": (ele) =>
+            CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default
+        });
+      });
+
+      const bgColorPicker = document.getElementById("bgColorPicker");
+        bgColorPicker.addEventListener("input", (e) => {
+          document.documentElement.style.setProperty(
+            "--page-bg",
+            e.target.value
+          );
+        });
+
+      const edgeColorPicker = document.getElementById("edgeColorPicker");
+        edgeColorPicker.addEventListener("input", (e) => {
+          CONFIG.edgeColor = e.target.value;
+          this.cy.edges().style({
+            "line-color": CONFIG.edgeColor,
+            "target-arrow-color": CONFIG.edgeColor
+          });
+        });
+
+
+      document.getElementById("resetColors").addEventListener("click", () => {
+      document.documentElement.style.setProperty("--page-bg", "#5050a0");
+
+      this.cy.nodes().style({
+        "background-color": (ele) =>
+          CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
+        "border-color": (ele) =>
+          CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default
+      });
+
+      this.cy.edges().style({
+        "line-color": CONFIG.edgeColor,
+        "target-arrow-color": CONFIG.edgeColor
+      });
+    });
+
 
 
     } catch (err) {

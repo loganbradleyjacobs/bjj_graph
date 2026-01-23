@@ -48,3 +48,13 @@ body {
   display: block;
   margin-top: 4px;
 }
+.layout-toggle input[type="color"] {
+  margin-left: 6px;
+  width: 28px;
+  height: 18px;
+  padding: 0;
+  border: var(--ui-border);
+  background: transparent;
+  cursor: pointer;
+}
+

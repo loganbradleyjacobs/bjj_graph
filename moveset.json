@@ -5,7 +5,7 @@
         "area": ["Standing", "Clinch"],
         "type": "Takedown"
     },
-    "Top Half Guard":{
+    "Half Guard":{
         "parents": ["Double Leg Takedown"],
         "children": ["Top Full Guard", "Back Taken", "Top Quarter Guard"],
         "area": ["Ground"],
@@ -63,7 +63,12 @@
     },
     "Clock Choke":{
         "parents":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket"],
-        "children":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket", "Clock Choke Finish"],
+        "children":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket"],
+        "type": "Submission"
+    },
+    "Cross Collar Choke":{
+        "parents":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket", "Clock Choke"],
+        "children":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket", "Clock Choke"],
         "type": "Submission"
     },
     "S Mount":{
@@ -83,7 +88,7 @@
     },
     "Arm Triangle":{
         "parents": ["Mount"],
-        "children":["Mount", "Top Side Control", "Chair Sit Ezekiel Choke"],
+        "children":["Mount", "Top Side Control", "Chair Sit Ezekiel"],
         "type": "Submission"
     },
     "Top Quarter Guard":{
@@ -91,7 +96,12 @@
         "children": ["Mount", "Top Half Guard"],
         "type": "Control"
     },
-    "Chair Sit Ezekiel Choke":{
+    "Ezekiel":{
+        "parents":["Mount", "Arm Triangle"],
+        "children":["Mount", "Arm Triangle"],
+        "type": "Submission"
+    },
+    "Chair Sit Ezekiel":{
         "parents":["Arm Triangle"],
         "children":["Back Control"],
         "type": "Submission"
