@@ -7,7 +7,7 @@ This script:
 2. Creates the database schema if it doesn't exist
 3. Migrates all nodes, edges, and properties to the database
 
-Usage: python migrate.py
+Usage: python3 migrate.py
 """
 
 import json
@@ -206,13 +206,24 @@ def main():
     
     print("\nTo start the application, run:")
     print("  uvicorn app:app --reload")
-    print("\nAPI endpoints:")
+    print("\nAPI endpoints available:")
     print("  GET / - Serve the web interface")
     print("  GET /moveset - Get moveset data from database")
     print("  POST /moveset - Save moveset data to database")
     print("  POST /initialize - Initialize database from moveset.json")
     print("  GET /health - Check database health")
     print("  GET /stats - Get database statistics")
+    print("  GET /nodes - List all nodes")
+    print("  POST /nodes - Create a new node")
+    print("  GET /nodes/{id} - Get a specific node")
+    print("  PUT /nodes/{id} - Update a node")
+    print("  DELETE /nodes/{id} - Delete a node")
+    print("  GET /edges - List all edges")
+    print("  POST /edges - Create a new edge")
+    print("  GET /edges/{id} - Get a specific edge")
+    print("  PUT /edges/{id} - Update an edge")
+    print("  DELETE /edges/{id} - Delete an edge")
+    print("  GET /graph-stats - Get comprehensive graph statistics")
 
 if __name__ == "__main__":
     main()
