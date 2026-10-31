@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <>
+  <head>
     <meta charset="UTF-8" />
     <title>BJJ Recursive Graph (Cytoscape)</title>
     <script src="https://unpkg.com/cytoscape@3.25.2/dist/cytoscape.min.js"></script>
@@ -13,7 +13,31 @@
   </head>
   <body>
     <div id="cy"></div>
-    <div class="layout-toggle">
+    <div id="tree-container" class="hidden">
+      <div id="tree-empty-state" class="tree-empty hidden">Tree View is ready.</div>
+    </div>
+    <div id="node-sidebar" class="node-sidebar hidden">
+      <button id="closeSidebar">×</button>
+      <h2 id="sidebarLabel"></h2>
+      <p><strong>Type:</strong> <span id="sidebarType"></span></p>
+      <p><strong>Area:</strong> <span id="sidebarArea"></span></p>
+      <p><strong>Parents:</strong> <span id="sidebarParents"></span></p>
+      <p><strong>Children:</strong> <span id="sidebarChildren"></span></p>
+      <p><strong>Video:</strong> <a id="sidebarVideo" href="#" target="_blank">Link</a></p>
+      <p><strong>Image:</strong></p>
+      <img id="sidebarImage" src="" alt="" width="80%">
+      <p><strong>Edge GIFs:</strong></p>
+      <div id="sidebarGifs"></div>
+    </div>
+    <div class="debug-sidebar">
+      <span class="row">
+        View:
+        <select id="viewMode">
+          <option value="graph">Graph View</option>
+          <option value="tree">Tree View</option>
+        </select>
+      </span>
+      <div id="graph-controls">
       <span class="row">
         Layout:
         <select id="layoutMode">
@@ -51,6 +75,20 @@
         Edge color:
         <input type="color" id="edgeColorPicker" value="#AAFDE9">
       </span>
+      </div>
+      <div id="tree-controls" class="hidden">
+        <span class="row">
+          Root:
+          <select id="treeRootSelect"></select>
+        </span>
+        <span class="row">
+          Direction:
+          <select id="treeDirection">
+            <option value="forward">Forward</option>
+            <option value="backward">Backward</option>
+          </select>
+        </span>
+      </div>
     </div>
   </body>
 </html>
