@@ -21,3 +21,6 @@ pnpm-debug.log*
 
 # App/runtime
 *.log
+
+#DB
+db_config.env
