@@ -19,6 +19,7 @@
     <div id="node-sidebar" class="node-sidebar hidden">
       <button id="closeSidebar">×</button>
       <h2 id="sidebarLabel"></h2>
+      <div id="nodeReadView">
       <p><strong>Type:</strong> <span id="sidebarType"></span></p>
       <p><strong>Area:</strong> <span id="sidebarArea"></span></p>
       <p><strong>Parents:</strong> <span id="sidebarParents"></span></p>
@@ -28,6 +29,32 @@
       <img id="sidebarImage" src="" alt="" width="80%">
       <p><strong>Edge GIFs:</strong></p>
       <div id="sidebarGifs"></div>
+      <button id="editNodeBtn">Edit</button>
+      </div>
+      <div id="nodeEditView" class="hidden">
+        <p><strong>Name:</strong> <span id="editNodeName"></span></p>
+        <label>Type: <select id="editNodeType"></select></label>
+        <label>Area: <input id="editNodeArea" type="text" placeholder="Comma-separated"></label>
+        <label>Image path: <input id="editNodeImage" type="text"></label>
+        <label>Video path: <input id="editNodeVideo" type="text"></label>
+        <button id="saveNodeBtn">Save</button>
+        <button id="cancelNodeBtn">Cancel</button>
+        <button id="deleteNodeBtn">Delete</button>
+      </div>
+      <div id="addEdgeControls">
+        <label>Add edge to: <select id="edgeTargetSelect"></select></label>
+        <input id="edgeGifsInput" type="text" placeholder="GIF URLs, comma-separated">
+        <button id="addEdgeBtn">Add edge</button>
+      </div>
+      <div id="edgeEditView" class="hidden">
+        <h3>Edge</h3>
+        <p><strong>Source:</strong> <span id="edgeSourceName"></span></p>
+        <p><strong>Target:</strong> <span id="edgeTargetName"></span></p>
+        <label>GIF URLs: <input id="editEdgeGifs" type="text" placeholder="Comma-separated"></label>
+        <button id="saveEdgeBtn">Save edge</button>
+        <button id="deleteEdgeBtn">Delete edge</button>
+      </div>
+      <p id="sidebarError" class="sidebar-error" role="alert"></p>
     </div>
     <div class="debug-sidebar">
       <span class="row">

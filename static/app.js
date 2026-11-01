@@ -146,6 +146,7 @@ class GraphDataProcessor {
           data: {
             source: parent,
             target: child,
+            edge_id: meta.edge_id,
             gifs: meta.gifs?.length ? meta.gifs : [defaultGifForEdge(parent, child)]
           }
         });
@@ -387,11 +388,22 @@ class GraphTooltipManager {
 }
 
 class SidebarManager {
-  constructor(moveset) {
+  constructor(moveset, nodes, nodeIdByName) {
     this.moveset = moveset;
+    this.nodes = nodes;
+    this.nodeIdByName = nodeIdByName;
     this.sidebar = document.getElementById("node-sidebar");
     this.closeBtn = document.getElementById("closeSidebar");
     this.closeBtn.addEventListener("click", () => this.hide());
+    this.currentNodeName = null;
+    this.currentEdgeId = null;
+    document.getElementById("editNodeBtn").addEventListener("click", () => this.enterEditMode());
+    document.getElementById("cancelNodeBtn").addEventListener("click", () => this.showPosition(this.currentNodeName));
+    document.getElementById("saveNodeBtn").addEventListener("click", () => this.saveNode());
+    document.getElementById("deleteNodeBtn").addEventListener("click", () => this.deleteNode());
+    document.getElementById("addEdgeBtn").addEventListener("click", () => this.addEdge());
+    document.getElementById("saveEdgeBtn").addEventListener("click", () => this.saveEdge());
+    document.getElementById("deleteEdgeBtn").addEventListener("click", () => this.deleteEdge());
   }
 
   showPosition(positionId) {
@@ -400,13 +412,28 @@ class SidebarManager {
       return;
     }
 
+    this.currentNodeName = positionId;
+    this.currentEdgeId = null;
     document.getElementById("sidebarLabel").textContent = positionId;
+    document.getElementById("nodeReadView").classList.remove("hidden");
+    document.getElementById("nodeEditView").classList.add("hidden");
+    document.getElementById("edgeEditView").classList.add("hidden");
+    document.getElementById("addEdgeControls").classList.remove("hidden");
+    this.clearError();
     document.getElementById("sidebarType").textContent = data.type || "";
     document.getElementById("sidebarVideo").href = data.video || "#";
     document.getElementById("sidebarImage").src =
       data.image || `/static/images/${positionId.replace(/\s+/g, "_").toLowerCase()}.png`;
     document.getElementById("sidebarParents").textContent = listToString(data.parents);
     document.getElementById("sidebarArea").textContent = listToString(data.area);
+    const targetSelect = document.getElementById("edgeTargetSelect");
+    targetSelect.replaceChildren();
+    this.nodes.filter((node) => node.name !== positionId).forEach((node) => {
+      const option = document.createElement("option");
+      option.value = node.id;
+      option.textContent = node.name;
+      targetSelect.appendChild(option);
+    });
 
     const childrenContainer = document.getElementById("sidebarChildren");
     childrenContainer.innerHTML = "";
@@ -453,6 +480,96 @@ class SidebarManager {
     this.sidebar.style.display = "block";
   }
 
+  enterEditMode() {
+    const data = this.moveset[this.currentNodeName];
+    document.getElementById("nodeReadView").classList.add("hidden");
+    document.getElementById("nodeEditView").classList.remove("hidden");
+    document.getElementById("editNodeName").textContent = this.currentNodeName;
+    const typeSelect = document.getElementById("editNodeType");
+    typeSelect.replaceChildren();
+    [...new Set(this.nodes.map((node) => node.type).filter(Boolean))].sort().forEach((type) => {
+      const option = document.createElement("option"); option.value = type; option.textContent = type;
+      typeSelect.appendChild(option);
+    });
+    if (data.type && ![...typeSelect.options].some((option) => option.value === data.type)) {
+      const option = document.createElement("option"); option.value = data.type; option.textContent = data.type; typeSelect.appendChild(option);
+    }
+    typeSelect.value = data.type || "";
+    document.getElementById("editNodeArea").value = (data.area || []).join(", ");
+    document.getElementById("editNodeImage").value = data.image || "";
+    document.getElementById("editNodeVideo").value = data.video || "";
+    this.clearError();
+  }
+
+  async request(url, method, body) {
+    const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`${response.status}: ${detail}`);
+    }
+    return response;
+  }
+
+  async saveNode() {
+    const id = this.nodeIdByName.get(this.currentNodeName);
+    const optional = (id) => document.getElementById(id).value.trim() || null;
+    const area = document.getElementById("editNodeArea").value.split(",").map((value) => value.trim()).filter(Boolean);
+    try {
+      await this.request(`/nodes/${id}`, "PUT", { type: document.getElementById("editNodeType").value, area, image_path: optional("editNodeImage"), video_path: optional("editNodeVideo") });
+      location.reload();
+    } catch (error) { this.showError(error); }
+  }
+
+  async deleteNode() {
+    const id = this.nodeIdByName.get(this.currentNodeName);
+    if (!confirm(`Delete ${this.currentNodeName}?`)) return;
+    try { await this.request(`/nodes/${id}`, "DELETE"); location.reload(); }
+    catch (error) { this.showError(error); }
+  }
+
+  async addEdge() {
+    const sourceId = this.nodeIdByName.get(this.currentNodeName);
+    const targetId = Number(document.getElementById("edgeTargetSelect").value);
+    if (!targetId) { this.showError("Select a target node."); return; }
+    const gifs = document.getElementById("edgeGifsInput").value.split(",").map((value) => value.trim()).filter(Boolean);
+    try { await this.request("/edges", "POST", { source_node_id: sourceId, target_node_id: targetId, edge_data: gifs.length ? { gifs } : {} }); location.reload(); }
+    catch (error) { this.showError(error); }
+  }
+
+  showEdge(edge) {
+    this.currentNodeName = null;
+    this.currentEdgeId = edge.edge_id;
+    document.getElementById("sidebarLabel").textContent = "Edge details";
+    document.getElementById("nodeReadView").classList.add("hidden");
+    document.getElementById("nodeEditView").classList.add("hidden");
+    document.getElementById("addEdgeControls").classList.add("hidden");
+    document.getElementById("edgeEditView").classList.remove("hidden");
+    document.getElementById("edgeSourceName").textContent = edge.source;
+    document.getElementById("edgeTargetName").textContent = edge.target;
+    document.getElementById("editEdgeGifs").value = (edge.gifs || []).join(", ");
+    const disabled = edge.edge_id == null;
+    document.getElementById("saveEdgeBtn").disabled = disabled;
+    document.getElementById("deleteEdgeBtn").disabled = disabled;
+    this.showError(disabled ? "This edge has no database ID and cannot be edited." : "");
+    this.open();
+  }
+
+  async saveEdge() {
+    const gifs = document.getElementById("editEdgeGifs").value.split(",").map((value) => value.trim()).filter(Boolean);
+    try { await this.request(`/edges/${this.currentEdgeId}`, "PUT", { edge_data: { gifs } }); location.reload(); }
+    catch (error) { this.showError(error); }
+  }
+
+  async deleteEdge() {
+    if (!confirm("Delete this edge?")) return;
+    try { await this.request(`/edges/${this.currentEdgeId}`, "DELETE"); location.reload(); }
+    catch (error) { this.showError(error); }
+  }
+
+  open() { this.sidebar.classList.remove("hidden"); this.sidebar.style.transform = "translateX(0)"; this.sidebar.style.display = "block"; }
+  showError(error) { document.getElementById("sidebarError").textContent = error ? String(error.message || error) : ""; }
+  clearError() { this.showError(""); }
+
   hide() {
     this.sidebar.classList.add("hidden");
     this.sidebar.style.transform = "translateX(-100%)";
@@ -460,11 +577,12 @@ class SidebarManager {
 }
 
 class GraphView {
-  constructor({ containerId, layoutSelectId, edgeStyleSelectId, onNodeSelect }) {
+  constructor({ containerId, layoutSelectId, edgeStyleSelectId, onNodeSelect, onEdgeSelect }) {
     this.container = document.getElementById(containerId);
     this.layoutSelect = document.getElementById(layoutSelectId);
     this.edgeStyleSelect = document.getElementById(edgeStyleSelectId);
     this.onNodeSelect = onNodeSelect;
+    this.onEdgeSelect = onEdgeSelect;
     this.cy = null;
     this.layoutManager = null;
     this.styleManager = null;
@@ -521,6 +639,7 @@ class GraphView {
       });
       this.onNodeSelect(node.id());
     });
+    this.cy.on("tap", "edge", (evt) => this.onEdgeSelect(evt.target));
   }
 
   resize() {
@@ -764,6 +883,8 @@ class TreeView {
 class App {
   constructor() {
     this.moveset = {};
+    this.nodes = [];
+    this.edges = [];
     this.nodeIds = [];
     this.state = {
       viewMode: "graph",
@@ -793,14 +914,19 @@ class App {
 
   async initialize() {
     this.moveset = await this.fetchMoveset();
+    [this.nodes, this.edges] = await Promise.all([this.fetchNodes(), this.fetchEdges()]);
+    this.nodeIdByName = new Map(this.nodes.map((node) => [node.name, node.id]));
+    this.nodeNameById = new Map(this.nodes.map((node) => [node.id, node.name]));
+    this.edgeById = new Map(this.edges.map((edge) => [edge.id, edge]));
     this.nodeIds = Object.keys(this.moveset);
 
-    this.sidebarManager = new SidebarManager(this.moveset);
+    this.sidebarManager = new SidebarManager(this.moveset, this.nodes, this.nodeIdByName);
     this.graphView = new GraphView({
       containerId: "cy",
       layoutSelectId: "layoutMode",
       edgeStyleSelectId: "edgeStyleMode",
-      onNodeSelect: (positionId) => this.handleGraphNodeSelect(positionId)
+      onNodeSelect: (positionId) => this.handleGraphNodeSelect(positionId),
+      onEdgeSelect: (edge) => this.handleGraphEdgeSelect(edge)
     });
     this.treeView = new TreeView({
       containerId: "tree-container",
@@ -823,6 +949,16 @@ class App {
       throw new Error(`Failed to fetch moveset: ${response.status}`);
     }
     return response.json();
+  }
+
+  async fetchNodes() { const r = await fetch("/nodes"); if (!r.ok) throw new Error(`nodes ${r.status}`); return r.json(); }
+  async fetchEdges() { const r = await fetch("/edges"); if (!r.ok) throw new Error(`edges ${r.status}`); return r.json(); }
+
+  handleGraphEdgeSelect(edge) {
+    this.sidebarManager.showEdge({
+      source: edge.data("source"), target: edge.data("target"), edge_id: edge.data("edge_id"),
+      gifs: edge.data("gifs") || []
+    });
   }
 
   initializeState() {

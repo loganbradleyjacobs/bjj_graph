@@ -14,15 +14,18 @@ import json
 import mysql.connector
 from pathlib import Path
 import sys
+import os
+from dotenv import load_dotenv
 
-# Database configuration
+load_dotenv(os.environ.get("DOTENV_PATH", ".env"))
+
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "",  # Update as needed
-    "database": "bjj",
-    "port": 3306,
-    "charset": "utf8mb4"
+    "host": os.environ.get("MYSQL_HOST", "localhost"),
+    "user": os.environ.get("MYSQL_USER", "root"),
+    "password": os.environ.get("MYSQL_PASSWORD", ""),
+    "database": os.environ.get("MYSQL_DATABASE", "bjj"),
+    "port": int(os.environ.get("MYSQL_PORT", "3306")),
+    "charset": "utf8mb4",
 }
 
 def get_connection():

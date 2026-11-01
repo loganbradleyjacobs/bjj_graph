@@ -99,6 +99,10 @@ body {
   transition: transform 0.3s ease;
 }
 
+.node-sidebar label { display: block; margin: 8px 0; }
+.node-sidebar input, .node-sidebar select { max-width: 100%; box-sizing: border-box; }
+.sidebar-error { color: #ff8d8d; font-size: 0.9em; }
+
 .node-sidebar.hidden {
   transform: translateX(-100%);
 }

@@ -1,6 +1,6 @@
 import json
 from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -8,6 +8,8 @@ from pydantic import BaseModel
 import mysql.connector
 import threading
 from datetime import datetime
+import os
+from dotenv import load_dotenv
 
 app = FastAPI()
 
@@ -15,14 +17,20 @@ app = FastAPI()
 BASE_DIR = Path(__file__).parent
 
 # MySQL Database Connection Configuration
+load_dotenv(os.environ.get("DOTENV_PATH", ".env"))
+
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "",
-    "database": "bjj",
-    "port": 3306,
-    "charset": "utf8mb4"
+    "host": os.environ.get("MYSQL_HOST", "localhost"),
+    "user": os.environ.get("MYSQL_USER", "root"),
+    "password": os.environ.get("MYSQL_PASSWORD", ""),
+    "database": os.environ.get("MYSQL_DATABASE", "bjj"),
+    "port": int(os.environ.get("MYSQL_PORT", "3306")),
+    "charset": "utf8mb4",
 }
+
+def _maybe_json(value):
+    """Decode JSON values returned as strings while preserving native values."""
+    return json.loads(value) if isinstance(value, str) else value
 
 # Mount a "static" folder for html
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -89,6 +97,7 @@ class EdgeResponse(EdgeCreate):
 
 # Existing endpoints (preserved for backward compatibility)
 @app.get("/")
+@app.head("/")
 def read_index():
     return FileResponse(BASE_DIR / "static" / "index.html")
 
@@ -98,44 +107,32 @@ def get_moveset():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Get all nodes with their properties
+        # Node records and graph relationships have separate sources of truth.
         cursor.execute("""
-            SELECT n.id, n.name, n.area, n.type, n.image_path, n.video_path,
-                   p.property_name, p.property_value
-            FROM nodes n
-            LEFT JOIN properties p ON n.id = p.node_id
-            ORDER BY n.name
+            SELECT id, name, area, type, image_path, video_path
+            FROM nodes ORDER BY name
         """)
-        
         rows = cursor.fetchall()
+        cursor.execute("SELECT id, source_node_id, target_node_id, edge_data FROM edges")
+        edges = cursor.fetchall()
         cursor.close()
-        
-        # Build the moveset structure
+
+        id_to_name = {row["id"]: row["name"] for row in rows}
         moveset = {}
-        current_node = None
-        
         for row in rows:
-            node_name = row['name']
-            if node_name not in moveset:
-                moveset[node_name] = {
-                    "parents": [],
-                    "children": {},
-                    "area": row['area'] if row['area'] else [],
-                    "type": row['type'],
-                    "image": row['image_path'],
-                    "video": row['video_path']
-                }
-                current_node = moveset[node_name]
-            
-            # Add parent relationships
-            if row['property_name'] == 'parents' and row['property_value']:
-                current_node['parents'] = row['property_value']
-            
-            # Add children relationships  
-            elif row['property_name'] == 'children' and row['property_value']:
-                children = json.loads(row['property_value']) if isinstance(row['property_value'], str) else row['property_value']
-                current_node['children'] = children
-                
+            moveset[row["name"]] = {
+                "parents": [], "children": {},
+                "area": _maybe_json(row["area"]) or [],
+                "type": row["type"], "image": row["image_path"], "video": row["video_path"],
+            }
+        for edge in edges:
+            source = id_to_name.get(edge["source_node_id"])
+            target = id_to_name.get(edge["target_node_id"])
+            if source is None or target is None:
+                continue
+            edge_data = _maybe_json(edge["edge_data"]) or {}
+            moveset[source]["children"][target] = {**edge_data, "edge_id": edge["id"]}
+            moveset[target]["parents"].append(source)
         return moveset
         
     except mysql.connector.Error as err:
@@ -488,7 +485,7 @@ async def create_node(node_data: NodeCreate):
         return NodeResponse(
             id=created_node['id'],
             name=created_node['name'],
-            area=json.loads(created_node['area']) if created_node['area'] else [],
+            area=_maybe_json(created_node['area']) or [],
             type=created_node['type'],
             image_path=created_node['image_path'],
             video_path=created_node['video_path'],
@@ -519,7 +516,7 @@ async def list_nodes():
             NodeResponse(
                 id=node['id'],
                 name=node['name'],
-                area=json.loads(node['area']) if node['area'] else [],
+                area=_maybe_json(node['area']) or [],
                 type=node['type'],
                 image_path=node['image_path'],
                 video_path=node['video_path'],
@@ -554,7 +551,7 @@ async def get_node(node_id: int):
         return NodeResponse(
             id=node['id'],
             name=node['name'],
-            area=json.loads(node['area']) if node['area'] else [],
+            area=_maybe_json(node['area']) or [],
             type=node['type'],
             image_path=node['image_path'],
             video_path=node['video_path'],
@@ -636,7 +633,7 @@ async def update_node(node_id: int, node_data: NodeUpdate):
         return NodeResponse(
             id=updated_node['id'],
             name=updated_node['name'],
-            area=json.loads(updated_node['area']) if updated_node['area'] else [],
+            area=_maybe_json(updated_node['area']) or [],
             type=updated_node['type'],
             image_path=updated_node['image_path'],
             video_path=updated_node['video_path'],
@@ -753,7 +750,7 @@ async def create_edge(edge_data: EdgeCreate):
             id=created_edge['id'],
             source_node_id=created_edge['source_node_id'],
             target_node_id=created_edge['target_node_id'],
-            edge_data=json.loads(created_edge['edge_data']) if created_edge['edge_data'] else {},
+            edge_data=_maybe_json(created_edge['edge_data']) or {},
             created_at=created_edge['created_at']
         )
         
@@ -781,7 +778,7 @@ async def list_edges():
                 id=edge['id'],
                 source_node_id=edge['source_node_id'],
                 target_node_id=edge['target_node_id'],
-                edge_data=json.loads(edge['edge_data']) if edge['edge_data'] else {},
+                edge_data=_maybe_json(edge['edge_data']) or {},
                 created_at=edge['created_at']
             )
             for edge in edges
@@ -813,7 +810,7 @@ async def get_edge(edge_id: int):
             id=edge['id'],
             source_node_id=edge['source_node_id'],
             target_node_id=edge['target_node_id'],
-            edge_data=json.loads(edge['edge_data']) if edge['edge_data'] else {},
+            edge_data=_maybe_json(edge['edge_data']) or {},
             created_at=edge['created_at']
         )
         
@@ -901,7 +898,7 @@ async def update_edge(edge_id: int, edge_data: EdgeUpdate):
             id=updated_edge['id'],
             source_node_id=updated_edge['source_node_id'],
             target_node_id=updated_edge['target_node_id'],
-            edge_data=json.loads(updated_edge['edge_data']) if updated_edge['edge_data'] else {},
+            edge_data=_maybe_json(updated_edge['edge_data']) or {},
             created_at=updated_edge['created_at']
         )
         
