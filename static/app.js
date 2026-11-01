@@ -263,17 +263,20 @@ class GraphLayoutManager {
   }
 
   runLayout(mode) {
-    if (mode === "concentric") {
+    try {
+      if (mode === "concentric") {
+        this.applyConcentricLayout();
+        return;
+      }
+
+      if (mode === "dagre") {
+        this.applyDagreLayout();
+      } else {
+        this.applyColaLayout();
+      }
+    } catch (error) {
+      console.warn(`Layout '${mode}' is unavailable; using concentric layout.`, error);
       this.applyConcentricLayout();
-      return;
-    }
-
-    this.applyConcentricLayout();
-
-    if (mode === "dagre") {
-      this.applyDagreLayout();
-    } else {
-      this.applyColaLayout();
     }
   }
 
@@ -937,8 +940,8 @@ class App {
 
     this.initializeState();
     this.populateTreeRootOptions();
-    this.graphView.initialize(this.moveset);
     this.bindGlobalControls();
+    this.graphView.initialize(this.moveset);
     this.syncControls();
     this.applyViewMode();
   }

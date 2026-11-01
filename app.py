@@ -606,11 +606,11 @@ async def update_node(node_id: int, node_data: NodeUpdate):
             update_fields.append("type = %s")
             update_values.append(node_data.type)
         
-        if node_data.image_path is not None:
+        if "image_path" in node_data.__fields_set__:
             update_fields.append("image_path = %s")
             update_values.append(node_data.image_path)
         
-        if node_data.video_path is not None:
+        if "video_path" in node_data.__fields_set__:
             update_fields.append("video_path = %s")
             update_values.append(node_data.video_path)
         
