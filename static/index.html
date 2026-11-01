@@ -31,12 +31,12 @@
       <div id="sidebarGifs"></div>
       <button id="editNodeBtn">Edit</button>
       </div>
-      <div id="nodeEditView" class="hidden">
+      <div id="nodeEditView" class="hidden" style="display:none;">
         <p><strong>Name:</strong> <span id="editNodeName"></span></p>
-        <label>Type: <select id="editNodeType"></select></label>
-        <label>Area: <input id="editNodeArea" type="text" placeholder="Comma-separated"></label>
-        <label>Image path: <input id="editNodeImage" type="text"></label>
-        <label>Video path: <input id="editNodeVideo" type="text"></label>
+        <label>Type: <select id="editType"></select></label>
+        <label>Area: <input id="editArea" type="text" placeholder="Comma-separated"></label>
+        <label>Image path: <input id="editImage" type="text"></label>
+        <label>Video path: <input id="editVideo" type="text"></label>
         <button id="saveNodeBtn">Save</button>
         <button id="cancelNodeBtn">Cancel</button>
         <button id="deleteNodeBtn">Delete</button>
@@ -48,9 +48,8 @@
       </div>
       <div id="edgeEditView" class="hidden">
         <h3>Edge</h3>
-        <p><strong>Source:</strong> <span id="edgeSourceName"></span></p>
-        <p><strong>Target:</strong> <span id="edgeTargetName"></span></p>
-        <label>GIF URLs: <input id="editEdgeGifs" type="text" placeholder="Comma-separated"></label>
+        <p id="edgeInfo"></p>
+        <label>GIF URLs: <input id="edgeGifs" type="text" placeholder="Comma-separated"></label>
         <button id="saveEdgeBtn">Save edge</button>
         <button id="deleteEdgeBtn">Delete edge</button>
       </div>

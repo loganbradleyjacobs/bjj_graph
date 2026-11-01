@@ -396,17 +396,25 @@ class SidebarManager {
     this.nodes = nodes;
     this.nodeIdByName = nodeIdByName;
     this.sidebar = document.getElementById("node-sidebar");
-    this.closeBtn = document.getElementById("closeSidebar");
-    this.closeBtn.addEventListener("click", () => this.hide());
     this.currentNodeName = null;
     this.currentEdgeId = null;
-    document.getElementById("editNodeBtn").addEventListener("click", () => this.enterEditMode());
-    document.getElementById("cancelNodeBtn").addEventListener("click", () => this.showPosition(this.currentNodeName));
-    document.getElementById("saveNodeBtn").addEventListener("click", () => this.saveNode());
-    document.getElementById("deleteNodeBtn").addEventListener("click", () => this.deleteNode());
-    document.getElementById("addEdgeBtn").addEventListener("click", () => this.addEdge());
-    document.getElementById("saveEdgeBtn").addEventListener("click", () => this.saveEdge());
-    document.getElementById("deleteEdgeBtn").addEventListener("click", () => this.deleteEdge());
+    this.attachListeners();
+  }
+
+  attachListeners() {
+    const on = (id, fn) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("click", fn);
+      else console.warn(`SidebarManager: missing #${id}`);
+    };
+    on("closeSidebar", () => this.hide());
+    on("editNodeBtn", () => this.enterEditMode());
+    on("saveNodeBtn", () => this.saveNode());
+    on("cancelNodeBtn", () => this.exitEditMode());
+    on("deleteNodeBtn", () => this.deleteNode());
+    on("addEdgeBtn", () => this.addEdge());
+    on("saveEdgeBtn", () => this.saveEdge());
+    on("deleteEdgeBtn", () => this.deleteEdge());
   }
 
   showPosition(positionId) {
@@ -420,6 +428,8 @@ class SidebarManager {
     document.getElementById("sidebarLabel").textContent = positionId;
     document.getElementById("nodeReadView").classList.remove("hidden");
     document.getElementById("nodeEditView").classList.add("hidden");
+    document.getElementById("nodeEditView").style.display = "none";
+    document.getElementById("editNodeBtn").classList.remove("hidden");
     document.getElementById("edgeEditView").classList.add("hidden");
     document.getElementById("addEdgeControls").classList.remove("hidden");
     this.clearError();
@@ -484,11 +494,18 @@ class SidebarManager {
   }
 
   enterEditMode() {
+    const node = this.nodes.find((item) => item.name === this.currentNodeName);
     const data = this.moveset[this.currentNodeName];
+    if (!node || !data) {
+      alert(`Could not find node '${this.currentNodeName}'.`);
+      return;
+    }
     document.getElementById("nodeReadView").classList.add("hidden");
     document.getElementById("nodeEditView").classList.remove("hidden");
+    document.getElementById("nodeEditView").style.display = "block";
+    document.getElementById("editNodeBtn").classList.add("hidden");
     document.getElementById("editNodeName").textContent = this.currentNodeName;
-    const typeSelect = document.getElementById("editNodeType");
+    const typeSelect = document.getElementById("editType");
     typeSelect.replaceChildren();
     [...new Set(this.nodes.map((node) => node.type).filter(Boolean))].sort().forEach((type) => {
       const option = document.createElement("option"); option.value = type; option.textContent = type;
@@ -498,9 +515,17 @@ class SidebarManager {
       const option = document.createElement("option"); option.value = data.type; option.textContent = data.type; typeSelect.appendChild(option);
     }
     typeSelect.value = data.type || "";
-    document.getElementById("editNodeArea").value = (data.area || []).join(", ");
-    document.getElementById("editNodeImage").value = data.image || "";
-    document.getElementById("editNodeVideo").value = data.video || "";
+    document.getElementById("editArea").value = (node.area || data.area || []).join(", ");
+    document.getElementById("editImage").value = node.image_path || data.image || "";
+    document.getElementById("editVideo").value = node.video_path || data.video || "";
+    this.clearError();
+  }
+
+  exitEditMode() {
+    document.getElementById("nodeEditView").classList.add("hidden");
+    document.getElementById("nodeEditView").style.display = "none";
+    document.getElementById("nodeReadView").classList.remove("hidden");
+    document.getElementById("editNodeBtn").classList.remove("hidden");
     this.clearError();
   }
 
@@ -515,42 +540,44 @@ class SidebarManager {
 
   async saveNode() {
     const id = this.nodeIdByName.get(this.currentNodeName);
-    const optional = (id) => document.getElementById(id).value.trim() || null;
-    const area = document.getElementById("editNodeArea").value.split(",").map((value) => value.trim()).filter(Boolean);
+    if (id == null) { alert(`Could not find database ID for '${this.currentNodeName}'.`); return; }
+    const optional = (fieldId) => document.getElementById(fieldId).value.trim() || null;
+    const area = document.getElementById("editArea").value.split(",").map((value) => value.trim()).filter(Boolean);
     try {
-      await this.request(`/nodes/${id}`, "PUT", { type: document.getElementById("editNodeType").value, area, image_path: optional("editNodeImage"), video_path: optional("editNodeVideo") });
+      await this.request(`/nodes/${id}`, "PUT", { type: document.getElementById("editType").value, area, image_path: optional("editImage"), video_path: optional("editVideo") });
       location.reload();
-    } catch (error) { this.showError(error); }
+    } catch (error) { alert(`Save failed: ${error.message}`); }
   }
 
   async deleteNode() {
     const id = this.nodeIdByName.get(this.currentNodeName);
+    if (id == null) { alert(`Could not find database ID for '${this.currentNodeName}'.`); return; }
     if (!confirm(`Delete ${this.currentNodeName}?`)) return;
     try { await this.request(`/nodes/${id}`, "DELETE"); location.reload(); }
-    catch (error) { this.showError(error); }
+    catch (error) { alert(`Delete failed: ${error.message}`); }
   }
 
   async addEdge() {
     const sourceId = this.nodeIdByName.get(this.currentNodeName);
     const targetId = Number(document.getElementById("edgeTargetSelect").value);
-    if (!targetId) { this.showError("Select a target node."); return; }
-    const gifs = document.getElementById("edgeGifsInput").value.split(",").map((value) => value.trim()).filter(Boolean);
-    try { await this.request("/edges", "POST", { source_node_id: sourceId, target_node_id: targetId, edge_data: gifs.length ? { gifs } : {} }); location.reload(); }
-    catch (error) { this.showError(error); }
+    if (!sourceId || !targetId) { alert("Select a target node."); return; }
+    try { await this.request("/edges", "POST", { source_node_id: sourceId, target_node_id: targetId, edge_data: {} }); location.reload(); }
+    catch (error) { alert(`Add edge failed: ${error.message}`); }
   }
 
-  showEdge(edge) {
+  showEdge({ edgeId, sourceName, targetName, gifs = [] }) {
     this.currentNodeName = null;
-    this.currentEdgeId = edge.edge_id;
+    this.currentEdgeId = edgeId;
     document.getElementById("sidebarLabel").textContent = "Edge details";
     document.getElementById("nodeReadView").classList.add("hidden");
     document.getElementById("nodeEditView").classList.add("hidden");
+    document.getElementById("nodeEditView").style.display = "none";
+    document.getElementById("editNodeBtn").classList.add("hidden");
     document.getElementById("addEdgeControls").classList.add("hidden");
     document.getElementById("edgeEditView").classList.remove("hidden");
-    document.getElementById("edgeSourceName").textContent = edge.source;
-    document.getElementById("edgeTargetName").textContent = edge.target;
-    document.getElementById("editEdgeGifs").value = (edge.gifs || []).join(", ");
-    const disabled = edge.edge_id == null;
+    document.getElementById("edgeInfo").textContent = `${sourceName} → ${targetName}`;
+    document.getElementById("edgeGifs").value = gifs.join(", ");
+    const disabled = edgeId == null;
     document.getElementById("saveEdgeBtn").disabled = disabled;
     document.getElementById("deleteEdgeBtn").disabled = disabled;
     this.showError(disabled ? "This edge has no database ID and cannot be edited." : "");
@@ -558,15 +585,15 @@ class SidebarManager {
   }
 
   async saveEdge() {
-    const gifs = document.getElementById("editEdgeGifs").value.split(",").map((value) => value.trim()).filter(Boolean);
+    const gifs = document.getElementById("edgeGifs").value.split(",").map((value) => value.trim()).filter(Boolean);
     try { await this.request(`/edges/${this.currentEdgeId}`, "PUT", { edge_data: { gifs } }); location.reload(); }
-    catch (error) { this.showError(error); }
+    catch (error) { alert(`Save edge failed: ${error.message}`); }
   }
 
   async deleteEdge() {
     if (!confirm("Delete this edge?")) return;
     try { await this.request(`/edges/${this.currentEdgeId}`, "DELETE"); location.reload(); }
-    catch (error) { this.showError(error); }
+    catch (error) { alert(`Delete edge failed: ${error.message}`); }
   }
 
   open() { this.sidebar.classList.remove("hidden"); this.sidebar.style.transform = "translateX(0)"; this.sidebar.style.display = "block"; }
@@ -607,7 +634,7 @@ class GraphView {
     this.layoutManager = new GraphLayoutManager(this.cy);
     this.tooltipManager = new GraphTooltipManager(this.cy);
 
-    this.registerEventListeners();
+    this.setupEventListeners();
     this.layoutManager.runLayout(this.layoutSelect.value);
     this.styleManager.updateEdgeWidths();
     this.styleManager.updateLabelSizing();
@@ -617,7 +644,7 @@ class GraphView {
     this.cy.userPanningEnabled(true);
   }
 
-  registerEventListeners() {
+  setupEventListeners() {
     this.layoutSelect.addEventListener("change", () => {
       this.layoutManager.runLayout(this.layoutSelect.value);
     });
@@ -633,6 +660,7 @@ class GraphView {
 
     this.cy.on("tap", "node", (evt) => {
       const node = evt.target;
+      if (CONFIG.debug) console.log(`Data for clicked node: ${node.id()}`, node.data());
       const fractionOfViewport = 0.15;
       this.cy.animate({
         center: { eles: node },
@@ -640,9 +668,9 @@ class GraphView {
         duration: 300,
         easing: "ease-in-out"
       });
-      this.onNodeSelect(node.id());
+      this.onNodeSelect?.(evt.target.id());
     });
-    this.cy.on("tap", "edge", (evt) => this.onEdgeSelect(evt.target));
+    this.cy.on("tap", "edge", (evt) => this.onEdgeSelect?.(evt.target));
   }
 
   resize() {
@@ -928,8 +956,8 @@ class App {
       containerId: "cy",
       layoutSelectId: "layoutMode",
       edgeStyleSelectId: "edgeStyleMode",
-      onNodeSelect: (positionId) => this.handleGraphNodeSelect(positionId),
-      onEdgeSelect: (edge) => this.handleGraphEdgeSelect(edge)
+      onNodeSelect: (name) => this.sidebarManager.showPosition(name),
+      onEdgeSelect: (edge) => this.handleEdgeSelect(edge)
     });
     this.treeView = new TreeView({
       containerId: "tree-container",
@@ -957,9 +985,16 @@ class App {
   async fetchNodes() { const r = await fetch("/nodes"); if (!r.ok) throw new Error(`nodes ${r.status}`); return r.json(); }
   async fetchEdges() { const r = await fetch("/edges"); if (!r.ok) throw new Error(`edges ${r.status}`); return r.json(); }
 
-  handleGraphEdgeSelect(edge) {
+  handleEdgeSelect(edge) {
+    const edgeId = edge.data("edge_id");
+    if (edgeId == null) {
+      console.warn("Selected edge has no edge_id; skipping edge sidebar.");
+      return;
+    }
     this.sidebarManager.showEdge({
-      source: edge.data("source"), target: edge.data("target"), edge_id: edge.data("edge_id"),
+      edgeId,
+      sourceName: edge.data("source"),
+      targetName: edge.data("target"),
       gifs: edge.data("gifs") || []
     });
   }
