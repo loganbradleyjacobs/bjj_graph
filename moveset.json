@@ -1,147 +1,641 @@
 {
-    "Double Leg Takedown":{
-        "parents": ["Standing"],
-        "children": ["Top Half Guard", "Top Full Guard", "Top Side Control"],
-        "area": ["Standing", "Clinch"],
-        "type": "Takedown"
+  "positions": {
+    "Top Half Guard": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Guard"
     },
-    "Half Guard":{
-        "parents": ["Double Leg Takedown"],
-        "children": ["Top Full Guard", "Back Taken", "Top Quarter Guard"],
-        "area": ["Ground"],
-        "type": "Guard"
+    "Top Full Guard": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Guard"
     },
-    "Top Full Guard":{
-        "parents": ["Double Leg Takedown"],
-        "children": ["Top Side Control", "Top Half Guard", "Top Quarter Guard", "Top Butterfly Hooks", "Triangle Defense", "Armbar Defense", "Standing"],
-        "area": ["Ground"],
-        "type": "Guard"
+    "Mount": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Control"
     },
-    "Armbar":{
-        "parents": ["Mount", "Bottom Full Guard"],
-        "children": ["Bottom Side Control", "Stack Guard"],
-        "area": ["Ground"],
-        "type": "Submission"
+    "Standing": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Guard"
     },
-    "Mount":{
-        "parents": ["Top Side Control", "Top Kesa Getame", "Standing", "Top Half Guard", "Top Quarter Guard"],
-        "children": ["Bottom Side Control", "Stack Guard", "Mounted Americana", "Mounted Triangle", "Mounted Kimura", "Mounted Straight Arm Lock", "Arm Triangle"],
-        "area": ["Ground"],
-        "type": "Control"
+    "Bottom Full Guard": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Guard"
     },
-    "Standing":{
-        "parents": ["Top Full Guard"],
-        "children": ["Bottom Full Guard", "Double Leg Takedown"],
-        "area": ["Ground"],
-        "type": "Guard"
+    "Back Control": {
+      "type": "Control"
     },
-    "Bottom Full Guard":{
-        "parents": ["Standing", "Mount"],
-        "children": ["Armbar", "Mount", "Bottom Half Guard", "Bottom Knee Shield", "Triangle"],
-        "area": ["Ground"],
-        "type": "Guard"
+    "Body Triangle": {
+      "type": "Control"
     },
-    "Mounted Americana":{
-        "parents":["Mount"],
-        "children":["Mount", "Back Control", "S Mount", "Giftwrap"],
-        "type": "Submission"
+    "S Mount": {
+      "type": "Control"
     },
-    "Back Control":{
-        "parents":["Mounted Americana"],
-        "children":["Rear Naked Choke", "Clock Choke", "Body Triangle"],
-        "type": "Control"
+    "Giftwrap": {
+      "type": "Control"
     },
-    "Rear Naked Choke":{
-        "parents":["Back Control", "Clock Choke"],
-        "children":["Back Control", "Clock Choke"],
-        "type": "Submission"
+    "Top Giftwrap Half-Guard": {
+      "type": "Control"
     },
-    "Body Triangle":{
-        "parents":["Back Control", "Straightjacket"],
-        "children":["Back Control", "Clock Choke From Back", "Straightjacket", "Rear Naked Choke"],
-        "type": "Control"
+    "Top Quarter Guard": {
+      "type": "Control"
     },
-    "Clock Choke":{
-        "parents":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket"],
-        "children":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket"],
-        "type": "Submission"
+    "Top Kesa Getame": {
+      "type": "Control"
     },
-    "Cross Collar Choke":{
-        "parents":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket", "Clock Choke"],
-        "children":["Back Control", "Body Triangle", "Rear Naked Choke", "Straightjacket", "Clock Choke"],
-        "type": "Submission"
+    "Bottom Kesa Getame": {
+      "type": "Control"
     },
-    "S Mount":{
-        "parents":["Mount"],
-        "children":["Mount"],
-        "type": "Control"
+    "Top Bottom Side Control Headlock": {
+      "type": "Control"
     },
-    "Giftwrap":{
-        "parents":["Mounted Americana"],
-        "children":["Top Giftwrap Half-Guard", "Armbar", "Body Triangle", "Rear Triangle"],
-        "type": "Control"
+    "Bottom Half Guard": {
+      "type": "Control"
     },
-    "Top Giftwrap Half-Guard":{
-        "parents":["Giftwrap"],
-        "children":[],
-        "type": "Control"
+    "Top Side Control": {
+      "type": "Control"
     },
-    "Arm Triangle":{
-        "parents": ["Mount"],
-        "children":["Mount", "Top Side Control", "Chair Sit Ezekiel"],
-        "type": "Submission"
+    "Bottom Side Control": {
+      "type": "Control"
     },
-    "Top Quarter Guard":{
-        "parents": ["Top Half Guard", "Mount"],
-        "children": ["Mount", "Top Half Guard"],
-        "type": "Control"
+    "Bottom Mount": {
+      "type": "Control"
     },
-    "Ezekiel":{
-        "parents":["Mount", "Arm Triangle"],
-        "children":["Mount", "Arm Triangle"],
-        "type": "Submission"
+    "Stack Guard": {
+      "type": "Unknown",
+      "_stub": true
     },
-    "Chair Sit Ezekiel":{
-        "parents":["Arm Triangle"],
-        "children":["Back Control"],
-        "type": "Submission"
+    "Straightjacket": {
+      "type": "Unknown",
+      "_stub": true
     },
-    "Top Kesa Getame":{
-        "parents":["Top Side Control"],
-        "children":["Mount"],
-        "type": "Control"
+    "Back Taken": {
+      "type": "Unknown",
+      "_stub": true
     },
-    "Bottom Kesa Getame":{
-        "parents":["Bottom Side Control"],
-        "children":["Top Side Control", "S Mount", "Mount"],
-        "type": "Control"
+    "Top Butterfly Hooks": {
+      "type": "Unknown",
+      "_stub": true
     },
-    "Top Bottom Side Control Headlock":{
-        "parents":["Top Side Control"],
-        "children":["S Mount", "Mount"],
-        "type": "Control"
+    "Triangle Defense": {
+      "type": "Unknown",
+      "_stub": true
     },
-    "Bottom Half Guard":{
-        "parents":["Bottom Full Guard", "Bottom Side Control"],
-        "children":["Bottom Full Guard", "Bottom Side Control", "Back Control", "Top Side Control", "Kimura", "Reverse Mount Kimura"],
-        "type": "Control"
+    "Armbar Defense": {
+      "type": "Unknown",
+      "_stub": true
     },
-    "Top Side Control":{
-        "parents":["Top Half Guard", "Top North South"],
-        "children":["Kimura", "Straight Arm Lock"],
-        "type": "Control"
+    "Mounted Triangle": {
+      "type": "Unknown",
+      "_stub": true
     },
-    "Bottom Side Control":{
-        "parents":["Bottom Half Guard", "Bottom Kesa Getame"],
-        "children":["Bottom Half Guard"],
-        "type": "Control"
+    "Mounted Kimura": {
+      "type": "Unknown",
+      "_stub": true
     },
-    "Bottom Mount":{
-        "parents":["Bottom Side Control"],
-        "children":["Top Full Guard"],
-        "type": "Control"
+    "Mounted Straight Arm Lock": {
+      "type": "Unknown",
+      "_stub": true
+    },
+    "Bottom Knee Shield": {
+      "type": "Unknown",
+      "_stub": true
+    },
+    "Triangle": {
+      "type": "Unknown",
+      "_stub": true
+    },
+    "Clock Choke From Back": {
+      "type": "Unknown",
+      "_stub": true
+    },
+    "Rear Triangle": {
+      "type": "Unknown",
+      "_stub": true
+    },
+    "Kimura": {
+      "type": "Unknown",
+      "_stub": true
+    },
+    "Reverse Mount Kimura": {
+      "type": "Unknown",
+      "_stub": true
+    },
+    "Top North South": {
+      "type": "Unknown",
+      "_stub": true
+    },
+    "Straight Arm Lock": {
+      "type": "Unknown",
+      "_stub": true
     }
+  },
+  "moves": [
+    {
+      "name": "Double Leg Takedown",
+      "type": "Takedown",
+      "from": [
+        "Standing"
+      ],
+      "to": [
+        "Top Half Guard",
+        "Top Full Guard",
+        "Top Side Control"
+      ],
+      "area": [
+        "Standing",
+        "Clinch"
+      ]
+    },
+    {
+      "name": "Armbar",
+      "type": "Submission",
+      "from": [
+        "Mount",
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Bottom Side Control",
+        "Stack Guard"
+      ],
+      "area": [
+        "Ground"
+      ]
+    },
+    {
+      "name": "Mounted Americana",
+      "type": "Submission",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mount",
+        "Back Control",
+        "S Mount",
+        "Giftwrap"
+      ]
+    },
+    {
+      "name": "Rear Naked Choke",
+      "type": "Submission",
+      "from": [
+        "Back Control"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "name": "Clock Choke",
+      "type": "Submission",
+      "from": [
+        "Back Control",
+        "Body Triangle",
+        "Straightjacket"
+      ],
+      "to": [
+        "Back Control",
+        "Body Triangle",
+        "Straightjacket"
+      ]
+    },
+    {
+      "name": "Cross Collar Choke",
+      "type": "Submission",
+      "from": [
+        "Back Control",
+        "Body Triangle",
+        "Straightjacket"
+      ],
+      "to": [
+        "Back Control",
+        "Body Triangle",
+        "Straightjacket"
+      ]
+    },
+    {
+      "name": "Arm Triangle",
+      "type": "Submission",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mount",
+        "Top Side Control"
+      ]
+    },
+    {
+      "name": "Ezekiel",
+      "type": "Submission",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "name": "Chair Sit Ezekiel",
+      "type": "Submission",
+      "from": [],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Half Guard"
+      ],
+      "to": [
+        "Top Full Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Half Guard"
+      ],
+      "to": [
+        "Back Taken"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Half Guard"
+      ],
+      "to": [
+        "Top Quarter Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Full Guard"
+      ],
+      "to": [
+        "Top Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Full Guard"
+      ],
+      "to": [
+        "Top Quarter Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Full Guard"
+      ],
+      "to": [
+        "Top Butterfly Hooks"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Full Guard"
+      ],
+      "to": [
+        "Triangle Defense"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Full Guard"
+      ],
+      "to": [
+        "Armbar Defense"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Top Kesa Getame"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Standing"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Top Half Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Top Quarter Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mounted Triangle"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mounted Kimura"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mounted Straight Arm Lock"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Standing"
+      ],
+      "to": [
+        "Bottom Full Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Bottom Half Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Bottom Knee Shield"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Triangle"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Body Triangle"
+      ],
+      "to": [
+        "Clock Choke From Back"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Giftwrap"
+      ],
+      "to": [
+        "Top Giftwrap Half-Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Giftwrap"
+      ],
+      "to": [
+        "Body Triangle"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Giftwrap"
+      ],
+      "to": [
+        "Rear Triangle"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Kesa Getame"
+      ],
+      "to": [
+        "Top Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Kesa Getame"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Kesa Getame"
+      ],
+      "to": [
+        "Top Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Kesa Getame"
+      ],
+      "to": [
+        "S Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Kesa Getame"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Bottom Side Control Headlock"
+      ],
+      "to": [
+        "Top Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Bottom Side Control Headlock"
+      ],
+      "to": [
+        "S Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Bottom Side Control Headlock"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Top Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Kimura"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Reverse Mount Kimura"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Top Half Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Top North South"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Kimura"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Straight Arm Lock"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Mount"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Mount"
+      ],
+      "to": [
+        "Top Full Guard"
+      ]
+    }
+  ]
 }
-
-
-

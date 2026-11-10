@@ -9,6 +9,9 @@ const CONFIG = {
     "Submission": "#d62728",
     "Takedown": "#DEB887",
     "Control": "#379a1c",
+    "Neutral": "#9b59b6",
+    "Transition": "#888",
+    "Unknown": "#ff5555",
     "default": "#888"
   },
   debug: true
@@ -16,38 +19,53 @@ const CONFIG = {
 
 // Data processing module
 class GraphDataProcessor {
-  static processMovesetData(moveset) {
+  static processMovesetData(data) {
     const elements = [];
+    const positions = data.positions || {};
+    const moves = data.moves || [];
 
-    Object.keys(moveset).forEach(key => {
-      const move = moveset[key];
+    // Nodes
+    Object.keys(positions).forEach(name => {
+      const pos = positions[name];
       elements.push({
         data: {
-          id: key,
-          label: key,
-          path: move.path || [],
-          parents: move.parents || [],
-          children: move.children || [],
-          area: move.area,
-          type: move.type,
-          image: move.image || `/static/images/${key.replace(/\s+/g, "_").toLowerCase()}.png`,
-          video: move.video,
-        },
+          id: name,
+          label: name,
+          type: pos.type,
+          area: pos.area || [],
+          image: pos.image ||
+            `/static/images/${name.replace(/\s+/g, "_").toLowerCase()}.png`,
+          video: pos.video,
+          stub: !!pos._stub,
+        }
       });
     });
 
-    // Add edges
-    Object.keys(moveset).forEach(key => {
-      const move = moveset[key];
-      if (move.children) {
-        move.children.forEach(child => {
-          if (moveset[child]) {
-            elements.push({
-              data: { source: key, target: child },
-            });
-          }
+    // Edges: expand each move's from x to into pairwise edges.
+    // Dedupe on (pair, move name) so two different moves on the same
+    // pair render as parallel edges, but the same move isn't doubled.
+    const edgeKeys = new Set();
+    moves.forEach((move, mi) => {
+      const froms = move.from || [];
+      const tos = move.to || [];
+      froms.forEach((f, fi) => {
+        tos.forEach((t, ti) => {
+          if (!positions[f] || !positions[t]) return; // guard
+          const key = [f, t].sort().join("::") + "::" + (move.name || "");
+          if (edgeKeys.has(key)) return;
+          edgeKeys.add(key);
+          elements.push({
+            data: {
+              id: `e${mi}_${fi}_${ti}`,
+              source: f,
+              target: t,
+              label: move.name || "",
+              moveType: move.type || "Transition",
+              moveName: move.name || null,
+            }
+          });
         });
-      }
+      });
     });
 
     return elements;
@@ -70,6 +88,18 @@ class GraphStyleManager {
         selector: "node.debug-hide-label",
         style: {
           label: ""
+        }
+      },
+      {
+        selector: "edge.hide-edge-label",
+        style: { label: "" }
+      },
+      {
+        selector: "node[?stub]",
+        style: {
+          "border-style": "dashed",
+          "border-color": "#ff5555",
+          "background-color": "#552222"
         }
       },
       {
@@ -113,17 +143,22 @@ class GraphStyleManager {
     return {
       width: 2,
       "line-color": CONFIG.edgeColor,
-      "target-arrow-color": CONFIG.edgeColor,
-      "target-arrow-shape": "triangle",
-      "arrow-scale": 2,
-      "curve-style": "straight",
+      "target-arrow-shape": "none",
+      "source-arrow-shape": "none",
+      "curve-style": "bezier",
+      label: (ele) => ele.data("label") || "",
+      "font-size": 8,
+      color: "#fff",
+      "text-rotation": "autorotate",
+      "text-background-opacity": 0.7,
+      "text-background-color": "#000",
+      "text-background-padding": 2,
     };
   }
 
   _calculateNodeWidth(ele) {
-    const childrenCount = ele.data("children")?.length || 1;
-    const parentCount = ele.data("parents")?.length || 1;
-    return 30 + (childrenCount + parentCount) * 5;
+    const deg = ele.degree ? ele.degree() : 1;
+    return 30 + deg * 5;
   }
 
   updateEdgeWidths() {
@@ -227,22 +262,35 @@ class GraphTooltipManager {
   }
 
   _setupEventListeners() {
-    this.cy.on("mouseover", "node", evt => this._showTooltip(evt));
+    this.cy.on("mouseover", "node", evt => this._showNodeTooltip(evt));
+    this.cy.on("mouseover", "edge", evt => this._showEdgeTooltip(evt));
     this.cy.on("mousemove", evt => this._moveTooltip(evt));
-    this.cy.on("mouseout", "node", () => this._hideTooltip());
-    this.cy.on("tap", "node", evt => CONFIG.debug && console.log(`Data for clicked node: ${evt.target.id()}`, evt.target.data()))
+    this.cy.on("mouseout", "node, edge", () => this._hideTooltip());
   }
 
-  _showTooltip(evt) {
+  _showNodeTooltip(evt) {
     const node = evt.target;
+    const lines = node.connectedEdges().map(e => {
+      const other = e.source().id() === node.id()
+        ? e.target().id() : e.source().id();
+      const name = e.data("label") || "(unnamed transition)";
+      return `&nbsp;&nbsp;${name} ↔ ${other}`;
+    });
     this.tooltip.innerHTML = `
       <strong>${node.data("label")}</strong><br>
-      Parents: ${node.data("parents").join(", ")}<br>
-      Children: ${node.data("children").join(", ")}<br>
-      Area: ${node.data("area")}<br>
-      Type: ${node.data("type")}<br>
-      Image: ${node.data("image")}<br>
-      Video: ${node.data("video")}
+      Type: ${node.data("type") || "?"}<br>
+      Area: ${(node.data("area") || []).join(", ") || "—"}<br>
+      ${lines.length ? "Moves:<br>" + lines.join("<br>") : "No moves recorded."}
+    `;
+    this.tooltip.style.display = "block";
+  }
+
+  _showEdgeTooltip(evt) {
+    const e = evt.target;
+    this.tooltip.innerHTML = `
+      <strong>${e.data("label") || "(unnamed transition)"}</strong><br>
+      Type: ${e.data("moveType") || "Transition"}<br>
+      ${e.source().id()} ↔ ${e.target().id()}
     `;
     this.tooltip.style.display = "block";
   }
@@ -346,13 +394,13 @@ class Graph {
       this.interactionManager.enableInteractions();
 
       // hook up show label checkbox
-      const showLabelCheckbox = document.getElementById("showLabelCheckbox")
+      const showLabelCheckbox = document.getElementById("showLabelCheckbox");
       showLabelCheckbox.addEventListener("change", () => {
         const show = showLabelCheckbox.checked;
-        this.cy.nodes().forEach(node => {
-          if (show) node.removeClass("debug-hide-label");
-          else node.addClass("debug-hide-label");
-        });
+        this.cy.nodes().forEach(n =>
+          show ? n.removeClass("debug-hide-label") : n.addClass("debug-hide-label"));
+        this.cy.edges().forEach(e =>
+          show ? e.removeClass("hide-edge-label") : e.addClass("hide-edge-label"));
       });
 
       const nodeColorPicker = document.getElementById("nodeColorPicker");
@@ -374,40 +422,38 @@ class Graph {
       });
 
       const bgColorPicker = document.getElementById("bgColorPicker");
-        bgColorPicker.addEventListener("input", (e) => {
-          document.documentElement.style.setProperty(
-            "--page-bg",
-            e.target.value
-          );
-        });
+      bgColorPicker.addEventListener("input", (e) => {
+        document.documentElement.style.setProperty(
+          "--page-bg",
+          e.target.value
+        );
+      });
 
       const edgeColorPicker = document.getElementById("edgeColorPicker");
-        edgeColorPicker.addEventListener("input", (e) => {
-          CONFIG.edgeColor = e.target.value;
-          this.cy.edges().style({
-            "line-color": CONFIG.edgeColor,
-            "target-arrow-color": CONFIG.edgeColor
-          });
+      edgeColorPicker.addEventListener("input", (e) => {
+        CONFIG.edgeColor = e.target.value;
+        this.cy.edges().style({
+          "line-color": CONFIG.edgeColor,
+          "target-arrow-color": CONFIG.edgeColor
         });
+      });
 
 
       document.getElementById("resetColors").addEventListener("click", () => {
-      document.documentElement.style.setProperty("--page-bg", "#5050a0");
+        document.documentElement.style.setProperty("--page-bg", "#5050a0");
 
-      this.cy.nodes().style({
-        "background-color": (ele) =>
-          CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
-        "border-color": (ele) =>
-          CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default
+        this.cy.nodes().style({
+          "background-color": (ele) =>
+            CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
+          "border-color": (ele) =>
+            CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default
+        });
+
+        this.cy.edges().style({
+          "line-color": CONFIG.edgeColor,
+          "target-arrow-color": CONFIG.edgeColor
+        });
       });
-
-      this.cy.edges().style({
-        "line-color": CONFIG.edgeColor,
-        "target-arrow-color": CONFIG.edgeColor
-      });
-    });
-
-
 
     } catch (err) {
       console.error("Failed to initialize graph:", err);
