@@ -42,9 +42,6 @@
     "Giftwrap": {
       "type": "Predicament"
     },
-    "Top Giftwrap Half-Guard": {
-      "type": "Predicament"
-    },
     "Top Quarter Guard": {
       "type": "Control"
     },
@@ -53,9 +50,6 @@
     },
     "Bottom Kesa Getame": {
       "type": "Control"
-    },
-    "Top Bottom Side Control Headlock": {
-      "type": "Predicament"
     },
     "Bottom Half Guard": {
       "type": "Control"
@@ -78,9 +72,8 @@
     "Back Taken": {
       "type": "Predicament"
     },
-    "Top Butterfly Hooks": {
-      "type": "Unknown",
-      "_stub": true
+    "Butterfly Guard": {
+      "type": "Guard"
     },
     "Triangle Defense": {
       "type": "Predicament"
@@ -99,8 +92,7 @@
       "type": "Submission"
     },
     "Bottom Knee Shield": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Guard"
     },
     "Triangle": {
       "type": "Submission",
@@ -109,15 +101,17 @@
     "Rear Triangle": {
       "type": "Submission"
     },
-    "Kimura": {
+    "Top Kimura": {
       "type": "Submission"
     },
-    "Reverse Mount Kimura": {
+    "Bottom Kimura": {
       "type": "Submission"
     },
     "Top North South": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Control"
+    },
+    "North South Choke": {
+      "type": "Submission"
     },
     "Straight Arm Lock": {
       "type": "Submission"
@@ -296,60 +290,6 @@
     {
       "type": "Finish",
       "from": [
-        "Back Control"
-      ],
-      "to": [
-        "Cross Collar Choke"
-      ]
-    },
-    {
-      "type": "Finish",
-      "from": [
-        "Body Triangle"
-      ],
-      "to": [
-        "Cross Collar Choke"
-      ]
-    },
-    {
-      "type": "Finish",
-      "from": [
-        "Straightjacket"
-      ],
-      "to": [
-        "Cross Collar Choke"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Cross Collar Choke"
-      ],
-      "to": [
-        "Back Control"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Cross Collar Choke"
-      ],
-      "to": [
-        "Body Triangle"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Cross Collar Choke"
-      ],
-      "to": [
-        "Straightjacket"
-      ]
-    },
-    {
-      "type": "Finish",
-      "from": [
         "Mount"
       ],
       "to": [
@@ -444,15 +384,6 @@
       ],
       "to": [
         "Top Quarter Guard"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Top Full Guard"
-      ],
-      "to": [
-        "Top Butterfly Hooks"
       ]
     },
     {
@@ -587,15 +518,6 @@
         "Giftwrap"
       ],
       "to": [
-        "Top Giftwrap Half-Guard"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Giftwrap"
-      ],
-      "to": [
         "Body Triangle"
       ]
     },
@@ -641,42 +563,6 @@
         "Bottom Kesa Getame"
       ],
       "to": [
-        "S Mount"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Bottom Kesa Getame"
-      ],
-      "to": [
-        "Mount"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Top Bottom Side Control Headlock"
-      ],
-      "to": [
-        "Top Side Control"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Top Bottom Side Control Headlock"
-      ],
-      "to": [
-        "S Mount"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Top Bottom Side Control Headlock"
-      ],
-      "to": [
         "Mount"
       ]
     },
@@ -708,12 +594,12 @@
       ]
     },
     {
-      "type": "Transition",
+      "type": "Finish",
       "from": [
         "Bottom Half Guard"
       ],
       "to": [
-        "Kimura"
+        "Bottom Kimura"
       ]
     },
     {
@@ -722,7 +608,7 @@
         "Bottom Half Guard"
       ],
       "to": [
-        "Reverse Mount Kimura"
+        "Bottom Mount"
       ]
     },
     {
@@ -744,12 +630,21 @@
       ]
     },
     {
-      "type": "Transition",
+      "type": "Finish",
+      "from": [
+        "Top North South"
+      ],
+      "to": [
+        "North South Choke"
+      ]
+    },
+    {
+      "type": "Finish",
       "from": [
         "Top Side Control"
       ],
       "to": [
-        "Kimura"
+        "Top Kimura"
       ]
     },
     {
@@ -865,6 +760,60 @@
         "Triangle"
       ],
       "notes": "Roll over the trapped shoulder. The lock stays; the position becomes a standard guard triangle. Finish is identical from there - you are not escaping, you are reconfiguring."
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "S Mount"
+      ],
+      "to": [
+        "Spiderweb"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Cross Collar Choke"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Cross Collar Choke"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Knee Shield"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Arm Triangle"
+      ],
+      "to": [
+        "Chair Sit Ezekiel"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Butterfly Guard"
+      ],
+      "to": [
+        "Bottom Full Guard"
+      ]
     }
   ]
 }

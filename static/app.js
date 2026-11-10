@@ -1,7 +1,7 @@
 // Configuration module
 const CONFIG = {
   edgeColor: "#AAFDE9",
-  maxEdgeWidth: 3,
+  maxEdgeWidth: 8,
   minArrowScale: 0.5,
   nodeColors: {
     "Guard": "#1f77b4",
@@ -161,7 +161,7 @@ class GraphStyleManager {
 
   _getEdgeStyles() {
     return {
-      width: 2,
+      width: 5,
       "line-color": CONFIG.edgeColor,
       "target-arrow-shape": "none",
       "source-arrow-shape": "none",
@@ -178,7 +178,7 @@ class GraphStyleManager {
 
   _calculateNodeWidth(ele) {
     const deg = ele.degree ? ele.degree() : 1;
-    return 30 + deg * 5;
+    return Math.min(60, 30 + deg * 5);
   }
 
   updateEdgeWidths() {
@@ -221,7 +221,12 @@ class GraphLayoutManager {
       return;
     }
 
-    this._applyConcentricLayout(); // seed positions first
+    if (mode === "fcose") {
+      this._applyFcoseLayout();
+      return;
+    }
+
+    this._applyConcentricLayout(); // seed positions first for dagre/cola
 
     if (mode === "dagre") {
       this._applyDagreLayout();
@@ -248,6 +253,25 @@ class GraphLayoutManager {
       edgeSep: 10,
       fit: true,
       padding: 20,
+    }).run();
+  }
+
+  _applyFcoseLayout() {
+    const IDEAL = { Finish: 20, Transition: 300, Escape: 500 };
+    const ELAST = { Finish: 1.0, Transition: 0.2, Escape: 0.1 };
+
+    this.cy.layout({
+      name: "fcose",
+      randomize: true,
+      animate: true,
+      animationDuration: 600,
+      nodeRepulsion: 8000,
+      idealEdgeLength: edge => IDEAL[edge.data("moveType")] ?? 300,
+      edgeElasticity: edge => ELAST[edge.data("moveType")] ?? 0.2,
+      gravity: 0.15,
+      numIter: 2500,
+      fit: true,
+      padding: 40,
     }).run();
   }
 
@@ -407,7 +431,7 @@ class GraphInteractionManager {
       this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value);
     });
 
-    this.cy.on("zoom", () => {
+    this.cy.on("zoomend", () => {
       this.styleManager.updateEdgeWidths();
       this.styleManager.updateLabelSizing();
     });
