@@ -34,16 +34,16 @@
       "type": "Control"
     },
     "Body Triangle": {
-      "type": "Control"
+      "type": "Predicament"
     },
     "S Mount": {
-      "type": "Control"
+      "type": "Predicament"
     },
     "Giftwrap": {
-      "type": "Control"
+      "type": "Predicament"
     },
     "Top Giftwrap Half-Guard": {
-      "type": "Control"
+      "type": "Predicament"
     },
     "Top Quarter Guard": {
       "type": "Control"
@@ -55,7 +55,7 @@
       "type": "Control"
     },
     "Top Bottom Side Control Headlock": {
-      "type": "Control"
+      "type": "Predicament"
     },
     "Bottom Half Guard": {
       "type": "Control"
@@ -70,72 +70,92 @@
       "type": "Control"
     },
     "Stack Guard": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Predicament"
     },
     "Straightjacket": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Predicament"
     },
     "Back Taken": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Predicament"
     },
     "Top Butterfly Hooks": {
       "type": "Unknown",
       "_stub": true
     },
     "Triangle Defense": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Predicament"
     },
     "Armbar Defense": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Predicament"
     },
     "Mounted Triangle": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Submission",
+      "notes": "Finishing:\n- Triangle lock with the ankle behind the knee, from Mount\n- Stay upright, head over their trapped shoulder\n- Do not get rolled forward - your weight is the advantage\n\nIf they defend or build posture:\n- Roll over the trapped shoulder into a standard Triangle\n- The lock stays; the position becomes a guard triangle"
     },
     "Mounted Kimura": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Submission"
     },
     "Mounted Straight Arm Lock": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Submission"
     },
     "Bottom Knee Shield": {
       "type": "Unknown",
       "_stub": true
     },
     "Triangle": {
-      "type": "Unknown",
-      "_stub": true
-    },
-    "Clock Choke From Back": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Submission",
+      "notes": "Finishing:\n- Standard guard triangle: lock, angle off, pull the head down\n- Adjust the lock so the crook of the knee is over the ankle\n- Squeeze and angle to finish\n\nEntry:\n- One arm and the head inside your legs (thrown up from guard)"
     },
     "Rear Triangle": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Submission"
     },
     "Kimura": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Submission"
     },
     "Reverse Mount Kimura": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Submission"
     },
     "Top North South": {
       "type": "Unknown",
       "_stub": true
     },
     "Straight Arm Lock": {
-      "type": "Unknown",
-      "_stub": true
+      "type": "Submission"
+    },
+    "Armbar": {
+      "type": "Submission",
+      "area": [
+        "Ground"
+      ],
+      "notes": "Finishing:\n- Strip any grip on your leg before extending\n- Knees pinched, heel tight to their armpit\n- Bridge hips up, pull the wrist to your chest\n- Thumb up, elbow down, squeeze\n\nExpected defenses:\n- Hitchhiker roll if they commit to escaping\n- Stack if they are strong enough to compress\n- If either lands, reset to Spiderweb or transition"
+    },
+    "Mounted Americana": {
+      "type": "Submission"
+    },
+    "Rear Naked Choke": {
+      "type": "Submission"
+    },
+    "Clock Choke": {
+      "type": "Submission"
+    },
+    "Cross Collar Choke": {
+      "type": "Submission"
+    },
+    "Arm Triangle": {
+      "type": "Submission"
+    },
+    "Ezekiel": {
+      "type": "Submission"
+    },
+    "Chair Sit Ezekiel": {
+      "type": "Submission"
+    },
+    "Spiderweb": {
+      "type": "Predicament",
+      "area": [
+        "Ground"
+      ],
+      "notes": "Retention:\n- Leg heavy across the neck, foot on the hip\n- Stay on your side, not flat on your back\n- Knees pinched, their arm trapped between them\n- If they posture, follow with your hips, not your arms\n\nEscapes to expect:\n- Stack defense (they drive forward to compress you)\n- Hand-fight the wrist, extract the arm, recover\n- Hitchhiker roll once the arm starts extending (see Armbar)"
     }
   },
   "moves": [
@@ -153,99 +173,230 @@
       "area": [
         "Standing",
         "Clinch"
-      ]
+      ],
+      "notes": "Level change first, then shoot. Lead knee to the mat between their feet, head to the outside hip (never the inside - guillotine). Hands on the backs of the knees, pull the ankles out, finish with a lift and turn. If they sprawl, keep your hips under you and circle up rather than reaching for a bad shot."
     },
     {
-      "name": "Armbar",
-      "type": "Submission",
-      "from": [
-        "Mount",
-        "Bottom Full Guard"
-      ],
-      "to": [
-        "Bottom Side Control",
-        "Stack Guard"
-      ],
-      "area": [
-        "Ground"
-      ]
-    },
-    {
-      "name": "Mounted Americana",
-      "type": "Submission",
+      "type": "Finish",
       "from": [
         "Mount"
       ],
       "to": [
-        "Mount",
-        "Back Control",
-        "S Mount",
+        "Mounted Americana"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
+        "S Mount"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
         "Giftwrap"
       ]
     },
     {
-      "name": "Rear Naked Choke",
-      "type": "Submission",
+      "type": "Finish",
       "from": [
         "Back Control"
       ],
       "to": [
+        "Rear Naked Choke"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Rear Naked Choke"
+      ],
+      "to": [
         "Back Control"
       ]
     },
     {
-      "name": "Clock Choke",
-      "type": "Submission",
+      "type": "Finish",
       "from": [
-        "Back Control",
-        "Body Triangle",
+        "Back Control"
+      ],
+      "to": [
+        "Clock Choke"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Body Triangle"
+      ],
+      "to": [
+        "Clock Choke"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
         "Straightjacket"
       ],
       "to": [
-        "Back Control",
-        "Body Triangle",
+        "Clock Choke"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Clock Choke"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Clock Choke"
+      ],
+      "to": [
+        "Body Triangle"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Clock Choke"
+      ],
+      "to": [
         "Straightjacket"
       ]
     },
     {
-      "name": "Cross Collar Choke",
-      "type": "Submission",
+      "type": "Finish",
       "from": [
-        "Back Control",
-        "Body Triangle",
+        "Back Control"
+      ],
+      "to": [
+        "Cross Collar Choke"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Body Triangle"
+      ],
+      "to": [
+        "Cross Collar Choke"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
         "Straightjacket"
       ],
       "to": [
-        "Back Control",
-        "Body Triangle",
+        "Cross Collar Choke"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Cross Collar Choke"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Cross Collar Choke"
+      ],
+      "to": [
+        "Body Triangle"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Cross Collar Choke"
+      ],
+      "to": [
         "Straightjacket"
       ]
     },
     {
-      "name": "Arm Triangle",
-      "type": "Submission",
+      "type": "Finish",
       "from": [
         "Mount"
       ],
       "to": [
-        "Mount",
+        "Arm Triangle"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Arm Triangle"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Arm Triangle"
+      ],
+      "to": [
         "Top Side Control"
       ]
     },
     {
-      "name": "Ezekiel",
-      "type": "Submission",
+      "type": "Finish",
       "from": [
         "Mount"
+      ],
+      "to": [
+        "Ezekiel"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Ezekiel"
       ],
       "to": [
         "Mount"
       ]
     },
     {
-      "name": "Chair Sit Ezekiel",
-      "type": "Submission",
-      "from": [],
+      "type": "Escape",
+      "from": [
+        "Chair Sit Ezekiel"
+      ],
       "to": [
         "Back Control"
       ]
@@ -422,21 +573,12 @@
       ]
     },
     {
-      "type": "Transition",
+      "type": "Finish",
       "from": [
         "Bottom Full Guard"
       ],
       "to": [
         "Triangle"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Body Triangle"
-      ],
-      "to": [
-        "Clock Choke From Back"
       ]
     },
     {
@@ -636,6 +778,93 @@
       "to": [
         "Top Full Guard"
       ]
+    },
+    {
+      "name": "Near-side Armbar Entry",
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Spiderweb"
+      ]
+    },
+    {
+      "name": "Far-side Armbar Entry",
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Spiderweb"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Spiderweb"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Spiderweb"
+      ],
+      "to": [
+        "Armbar"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Spiderweb"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Spiderweb"
+      ],
+      "to": [
+        "Stack Guard"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Spiderweb"
+      ],
+      "to": [
+        "Bottom Full Guard"
+      ]
+    },
+    {
+      "name": "Hitchhiker Escape",
+      "type": "Escape",
+      "from": [
+        "Armbar"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ],
+      "notes": "Roll over the trapped shoulder (the one opposite the leg crossing the neck) while hiding the elbow. Works best once the arm is extending - the attacker's commitment is what makes the roll available. The extension threat you are trading against is real, so commit fully. Lands in bottom side control if clean, recovers to guard if they release to avoid the roll."
+    },
+    {
+      "name": "Roll-through to Standard Triangle",
+      "type": "Transition",
+      "from": [
+        "Mounted Triangle"
+      ],
+      "to": [
+        "Triangle"
+      ],
+      "notes": "Roll over the trapped shoulder. The lock stays; the position becomes a standard guard triangle. Finish is identical from there - you are not escaping, you are reconfiguring."
     }
   ]
 }

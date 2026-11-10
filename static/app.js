@@ -6,6 +6,7 @@ const CONFIG = {
   nodeColors: {
     "Guard": "#1f77b4",
     "Pass": "#ff7f0e",
+    "Predicament": "#d4a017",
     "Submission": "#d62728",
     "Takedown": "#DEB887",
     "Control": "#379a1c",
@@ -36,6 +37,9 @@ class GraphDataProcessor {
           image: pos.image ||
             `/static/images/${name.replace(/\s+/g, "_").toLowerCase()}.png`,
           video: pos.video,
+          images: pos.images || [],
+          videos: pos.videos || [],
+          notes: pos.notes || "",
           stub: !!pos._stub,
         }
       });
@@ -62,6 +66,9 @@ class GraphDataProcessor {
               label: move.name || "",
               moveType: move.type || "Transition",
               moveName: move.name || null,
+              notes: move.notes || "",
+              images: move.images || [],
+              videos: move.videos || [],
             }
           });
         });
@@ -105,6 +112,19 @@ class GraphStyleManager {
       {
         selector: "edge",
         style: this._getEdgeStyles()
+      },
+      {
+        selector: 'edge[moveType = "Finish"]',
+        style: {
+          "line-color": "#d62728"
+        }
+      },
+      {
+        selector: 'edge[moveType = "Escape"]',
+        style: {
+          "line-style": "dashed",
+          opacity: 0.7
+        }
       }
     ];
   }
@@ -232,6 +252,12 @@ class GraphLayoutManager {
   }
 
   _applyColaLayout() {
+    const SPRING = {
+      Finish: 10,
+      Transition: 30,
+      Escape: 100,
+    };
+
     this.cy.layout({
       name: "cola",
       animate: true,
@@ -241,6 +267,7 @@ class GraphLayoutManager {
       padding: 20,
       nodeSpacing: () => 20,
       avoidOverlap: true,
+      edgeLength: edge => SPRING[edge.data("moveType")] ?? 90,
     }).run();
   }
 }
@@ -270,28 +297,83 @@ class GraphTooltipManager {
 
   _showNodeTooltip(evt) {
     const node = evt.target;
-    const lines = node.connectedEdges().map(e => {
-      const other = e.source().id() === node.id()
-        ? e.target().id() : e.source().id();
-      const name = e.data("label") || "(unnamed transition)";
-      return `&nbsp;&nbsp;${name} ↔ ${other}`;
+    const escape = s => String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    const incoming = node.incomers("edge").map(e => {
+      const kind = e.data("moveType") || "transition";
+      const nm = e.data("label") ? ` — ${escape(e.data("label"))}` : "";
+      return `&nbsp;&nbsp;← ${escape(e.source().id())} (${escape(kind)}${nm})`;
     });
-    this.tooltip.innerHTML = `
-      <strong>${node.data("label")}</strong><br>
-      Type: ${node.data("type") || "?"}<br>
-      Area: ${(node.data("area") || []).join(", ") || "—"}<br>
-      ${lines.length ? "Moves:<br>" + lines.join("<br>") : "No moves recorded."}
-    `;
+    const outgoing = node.outgoers("edge").map(e => {
+      const kind = e.data("moveType") || "transition";
+      const nm = e.data("label") ? ` — ${escape(e.data("label"))}` : "";
+      return `&nbsp;&nbsp;→ ${escape(e.target().id())} (${escape(kind)}${nm})`;
+    });
+
+    const parts = [
+      `<strong>${escape(node.data("label"))}</strong>`,
+      `Type: ${escape(node.data("type") || "?")}`,
+      `Area: ${(node.data("area") || []).map(escape).join(", ") || "—"}`,
+    ];
+
+    if (incoming.length) parts.push("Entries:<br>" + incoming.join("<br>"));
+    if (outgoing.length) parts.push("Exits:<br>" + outgoing.join("<br>"));
+
+    const notes = node.data("notes");
+    if (notes) parts.push(`<hr>${escape(notes).replace(/\n/g, "<br>")}`);
+
+    const images = node.data("images") || [];
+    if (images.length) {
+      parts.push("Images:<br>" + images.map(src =>
+        `<a href="${escape(src)}" target="_blank">${escape(src.split("/").pop())}</a>`
+      ).join("<br>"));
+    }
+
+    const videos = node.data("videos") || [];
+    if (videos.length) {
+      parts.push("Videos:<br>" + videos.map(url =>
+        `<a href="${escape(url)}" target="_blank">${escape(url)}</a>`
+      ).join("<br>"));
+    }
+
+    this.tooltip.innerHTML = parts.join("<br>");
     this.tooltip.style.display = "block";
   }
 
   _showEdgeTooltip(evt) {
     const e = evt.target;
-    this.tooltip.innerHTML = `
-      <strong>${e.data("label") || "(unnamed transition)"}</strong><br>
-      Type: ${e.data("moveType") || "Transition"}<br>
-      ${e.source().id()} ↔ ${e.target().id()}
-    `;
+    const escape = s => String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    const parts = [
+      `<strong>${escape(e.data("label") || "(unnamed transition)")}</strong>`,
+      `Type: ${escape(e.data("moveType") || "Transition")}`,
+      `${escape(e.source().id())} ↔ ${escape(e.target().id())}`,
+    ];
+
+    const notes = e.data("notes");
+    if (notes) parts.push(`<hr>${escape(notes).replace(/\n/g, "<br>")}`);
+
+    const images = e.data("images") || [];
+    if (images.length) {
+      parts.push("Images:<br>" + images.map(src =>
+        `<a href="${escape(src)}" target="_blank">${escape(src.split("/").pop())}</a>`
+      ).join("<br>"));
+    }
+
+    const videos = e.data("videos") || [];
+    if (videos.length) {
+      parts.push("Videos:<br>" + videos.map(url =>
+        `<a href="${escape(url)}" target="_blank">${escape(url)}</a>`
+      ).join("<br>"));
+    }
+
+    this.tooltip.innerHTML = parts.join("<br>");
     this.tooltip.style.display = "block";
   }
 
