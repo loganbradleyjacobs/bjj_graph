@@ -1,8 +1,6 @@
 // Configuration module
 const CONFIG = {
   edgeColor: "#AAFDE9",
-  maxEdgeWidth: 8,
-  minArrowScale: 0.5,
   nodeColors: {
     "Guard": "#1f77b4",
     "Pass": "#ff7f0e",
@@ -14,8 +12,7 @@ const CONFIG = {
     "Transition": "#888",
     "Unknown": "#ff5555",
     "default": "#888"
-  },
-  debug: true
+  }
 };
 
 // Data processing module
@@ -41,6 +38,8 @@ class GraphDataProcessor {
           videos: pos.videos || [],
           notes: pos.notes || "",
           stub: !!pos._stub,
+          x: pos.x != null ? pos.x : null,
+          y: pos.y != null ? pos.y : null,
         }
       });
     });
@@ -161,7 +160,7 @@ class GraphStyleManager {
 
   _getEdgeStyles() {
     return {
-      width: 5,
+      width: 1,
       "line-color": CONFIG.edgeColor,
       "target-arrow-shape": "none",
       "source-arrow-shape": "none",
@@ -183,13 +182,10 @@ class GraphStyleManager {
 
   updateEdgeWidths() {
     const zoom = this.cy.zoom();
-    const width = Math.min(CONFIG.maxEdgeWidth, CONFIG.maxEdgeWidth / zoom);
-    const arrowScale = Math.min(1, width);
-
+    const screenWidth = 1;
     this.cy.batch(() => {
       this.cy.edges().forEach(edge => {
-        edge.style("width", width);
-        edge.style("arrow-scale", arrowScale);
+        edge.style("width", screenWidth / zoom);
       });
     });
   }
@@ -213,9 +209,24 @@ class GraphStyleManager {
 class GraphLayoutManager {
   constructor(cy) {
     this.cy = cy;
+    this._activeLayout = null;
+    this._layoutToken = 0;
   }
 
-  runLayout(mode) {
+  runLayout(mode, opts = {}) {
+    // Stop any layout that's still running.
+    if (this._activeLayout && typeof this._activeLayout.stop === "function") {
+      try { this._activeLayout.stop(); } catch (e) { /* noop */ }
+    }
+    this._activeLayout = null;
+    this.cy.stop();
+    this._layoutToken += 1;
+
+    if (mode === "preset") {
+      this._applyPresetLayout(opts);
+      return;
+    }
+
     if (mode === "concentric") {
       this._applyConcentricLayout();
       return;
@@ -235,17 +246,102 @@ class GraphLayoutManager {
     }
   }
 
+  _applyPresetLayout(opts = {}) {
+    const animate = opts.animate !== false;
+    const startup = opts.startup === true;
+
+    const nodes = this.cy.nodes();
+    const allHavePositions = nodes.length > 0 && nodes.every(n => {
+      return n.data("x") != null && n.data("y") != null;
+    });
+
+    if (!allHavePositions) {
+      this.cy.fit(undefined, 40);
+      return;
+    }
+
+    if (!animate) {
+      nodes.forEach(n => n.position({ x: n.data("x"), y: n.data("y") }));
+      this.cy.fit(undefined, 40);
+      return;
+    }
+
+    // 1. Set starting positions
+    if (startup) {
+      // Scatter nodes near origin so they are distinguishable
+      nodes.forEach(n => {
+        n.position({
+          x: (Math.random() - 0.5) * 260,
+          y: (Math.random() - 0.5) * 260,
+        });
+      });
+      this.cy.fit(nodes, 40);
+    }
+
+    // 2. Pre-calculate the target viewport from saved positions.
+    // We temporarily move nodes to their saved positions, calculate the
+    // bounding box, and restore them. This lets us animate the camera
+    // and the nodes concurrently, so nodes stay in view the whole time.
+    const currentPositions = nodes.map(n => ({ ...n.position() }));
+    nodes.forEach(n => n.position({ x: n.data("x"), y: n.data("y") }));
+    const targetBB = nodes.boundingBox();
+    nodes.forEach((n, i) => n.position(currentPositions[i]));
+
+    const duration = 800;
+    const easing = "ease-out";
+    const myToken = this._layoutToken;
+
+    // 3. Animate the viewport concurrently with node movement.
+    if (targetBB.w > 0 && targetBB.h > 0) {
+      const w = this.cy.width();
+      const h = this.cy.height();
+      const padding = 40;
+      const targetZoom = Math.min(
+        (w - 2 * padding) / targetBB.w,
+        (h - 2 * padding) / targetBB.h
+      );
+      const targetPan = {
+        x: w / 2 - targetZoom * (targetBB.x1 + targetBB.w / 2),
+        y: h / 2 - targetZoom * (targetBB.y1 + targetBB.h / 2),
+      };
+      this.cy.animate({
+        zoom: targetZoom,
+        pan: targetPan,
+        duration,
+        easing,
+      });
+    }
+
+    // 4. Animate nodes to saved positions.
+    nodes.forEach(n => {
+      n.animate(
+        { position: { x: n.data("x"), y: n.data("y") } },
+        { duration, easing }
+      );
+    });
+
+    // 5. Track layout for cancellation.
+    this._activeLayout = {
+      stop: () => {
+        this.cy.stop();
+        nodes.stop();
+      },
+    };
+  }
+
   _applyConcentricLayout() {
-    this.cy.layout({
+    const layout = this.cy.layout({
       name: "concentric",
       concentric: n => n.degree(),
       levelWidth: () => 1,
       padding: 50,
-    }).run();
+    });
+    this._activeLayout = layout;
+    layout.run();
   }
 
   _applyDagreLayout() {
-    this.cy.layout({
+    const layout = this.cy.layout({
       name: "dagre",
       rankDir: "TB",
       rankSep: 50,
@@ -253,14 +349,16 @@ class GraphLayoutManager {
       edgeSep: 10,
       fit: true,
       padding: 20,
-    }).run();
+    });
+    this._activeLayout = layout;
+    layout.run();
   }
 
   _applyFcoseLayout() {
     const IDEAL = { Finish: 20, Transition: 300, Escape: 500 };
     const ELAST = { Finish: 1.0, Transition: 0.2, Escape: 0.1 };
 
-    this.cy.layout({
+    const layout = this.cy.layout({
       name: "fcose",
       randomize: true,
       animate: true,
@@ -272,7 +370,9 @@ class GraphLayoutManager {
       numIter: 2500,
       fit: true,
       padding: 40,
-    }).run();
+    });
+    this._activeLayout = layout;
+    layout.run();
   }
 
   _applyColaLayout() {
@@ -282,7 +382,7 @@ class GraphLayoutManager {
       Escape: 100,
     };
 
-    this.cy.layout({
+    const layout = this.cy.layout({
       name: "cola",
       animate: true,
       randomize: false,
@@ -292,7 +392,9 @@ class GraphLayoutManager {
       nodeSpacing: () => 20,
       avoidOverlap: true,
       edgeLength: edge => SPRING[edge.data("moveType")] ?? 90,
-    }).run();
+    });
+    this._activeLayout = layout;
+    layout.run();
   }
 }
 
@@ -492,8 +594,23 @@ class Graph {
       );
       this.tooltipManager = new GraphTooltipManager(this.cy);
 
-      // Apply initial layout and styles
-      this.layoutManager.runLayout(this.layoutSelect.value);
+      // Apply initial layout and styles.
+      // If every node has saved x/y, use preset mode and apply positions.
+      // Otherwise run the selected layout as usual.
+      const allNodes = this.cy.nodes();
+      const allHavePositions = allNodes.length > 0 && allNodes.every(n => {
+        const x = n.data("x");
+        const y = n.data("y");
+        return x != null && y != null;
+      });
+
+      if (allHavePositions) {
+        this.layoutSelect.value = "preset";
+        this.layoutManager.runLayout("preset", { startup: true });
+      } else {
+        this.layoutManager.runLayout(this.layoutSelect.value);
+      }
+
       this.styleManager.updateEdgeWidths();
       this.styleManager.updateLabelSizing();
       this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value);
@@ -561,6 +678,8 @@ class Graph {
         });
       });
 
+      this._wireUpSaveButton();
+
     } catch (err) {
       console.error("Failed to initialize graph:", err);
     }
@@ -570,6 +689,55 @@ class Graph {
     const response = await fetch("/moveset");
     if (!response.ok) throw new Error(`Failed to fetch moveset: ${response.status}`);
     return await response.json();
+  }
+
+  _wireUpSaveButton() {
+    const btn = document.getElementById("savePositions");
+    const status = document.getElementById("saveStatus");
+    if (!btn || !status) return;
+
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      status.textContent = "Saving…";
+      try {
+        const result = await this.savePositions();
+        status.textContent = `Saved ${result.saved} / ${result.total} nodes`;
+        setTimeout(() => { status.textContent = ""; }, 3000);
+      } catch (err) {
+        console.error(err);
+        status.textContent = `Save failed: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
+  async savePositions() {
+    const positions = {};
+    this.cy.nodes().forEach(n => {
+      const p = n.position();
+      positions[n.id()] = { x: p.x, y: p.y };
+    });
+
+    const resp = await fetch("/moveset/positions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ positions }),
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`${resp.status} — ${text.slice(0, 200)}`);
+    }
+
+    // Keep in-memory data in sync with disk so that switching back to
+    // preset restores the just-saved layout, not the previous one.
+    this.cy.nodes().forEach(n => {
+      n.data("x", n.position("x"));
+      n.data("y", n.position("y"));
+    });
+
+    return await resp.json();
   }
 }
 

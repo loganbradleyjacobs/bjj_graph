@@ -21,6 +21,7 @@
         Layout:
         <select id="layoutMode">
           <option value="fcose" selected>fCoSE</option>
+          <option value="preset">Preset (saved)</option>
           <option value="cola">Cola</option>
           <option value="dagre">Dagre</option>
           <option value="concentric">Concentric</option>
@@ -40,6 +41,10 @@
       <span class="row">
         <input type="checkbox" id="showLabelCheckbox">
         <label for="showLabelCheckbox">Show labels</label>
+      </span>
+      <span class="row">
+        <button id="savePositions">Save positions</button>
+        <span id="saveStatus" class="save-status"></span>
       </span>
       <span class="row">
         Node color:
