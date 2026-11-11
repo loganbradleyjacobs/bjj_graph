@@ -1,7 +1,7 @@
 :root {
   --ui-bg: rgba(0, 0, 0, 0.8);
   --ui-text: #fff;
-  --ui-font: 12px sans-serif;
+  --ui-font: 14px Verdana, Geneva, sans-serif; /* Updated */
   --ui-border: 1px burlywood solid;
   --page-bg: rgba(80, 80, 160, 1);
 }
@@ -28,7 +28,8 @@ body {
 .layout-toggle {
   position: fixed;
   top: 12px;
-  right: 12px;
+  left: 12px;
+  right: auto;
   z-index: 10;
   background: var(--ui-bg);
   color: var(--ui-text);
@@ -76,4 +77,240 @@ body {
   margin-left: 8px;
   font-size: 11px;
   opacity: 0.85;
+}
+
+/* --- Graph Container --- */
+#graph-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#graph-container.sidebar-open {
+  width: calc(100% - 420px);
+}
+#cy {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* --- Node Inspector Sidebar --- */
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: -420px;
+  width: 420px;
+  height: 100vh;
+  background: rgba(20, 20, 25, 0.95);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+  z-index: 100;
+  border-left: 1px solid rgba(255,255,255,0.1);
+  box-sizing: border-box;
+}
+.sidebar.open {
+  right: 0;
+}
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.icon-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.icon-btn:hover { opacity: 1; }
+.sidebar-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+.form-group {
+  margin-bottom: 20px;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.form-group input, .form-group textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  padding: 10px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: #5050a0;
+}
+.form-group input[readonly], .form-group textarea[readonly] {
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0;
+  cursor: default;
+}
+.connection-list {
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+.connection-item {
+  padding: 4px 0;
+  color: #ccc;
+}
+.connection-item span.type {
+  color: #d4a017;
+  font-size: 0.8rem;
+  margin-left: 5px;
+}
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  gap: 10px;
+  background: rgba(0,0,0,0.2);
+}
+.btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  transition: background 0.2s, opacity 0.2s;
+}
+.btn:hover { background: rgba(255,255,255,0.2); }
+.btn.primary { background: #5050a0; }
+.btn.primary:hover { background: #6060c0; }
+.btn.danger { background: rgba(220, 50, 50, 0.2); color: #ff8888; }
+.btn.danger:hover { background: rgba(220, 50, 50, 0.4); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Connection Editor */
+.connections-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.connection-row {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.connection-row input, .connection-row select {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 6px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+.connection-row .row-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.connection-row .row-header input {
+  flex: 1;
+}
+.connection-row .row-header select {
+  width: 110px;
+}
+.connection-row .row-io {
+  display: flex;
+  gap: 8px;
+}
+.connection-row .row-io input {
+  flex: 1;
+}
+.connection-row .delete-conn {
+  color: #ff8888;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  opacity: 0.7;
+  padding: 0 5px;
+}
+.connection-row .delete-conn:hover {
+  opacity: 1;
+}
+.btn.small {
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  flex: none;
+  background: rgba(255,255,255,0.2);
+}
+
+/* Connection Groupings */
+.conn-group {
+  margin-bottom: 15px;
+}
+.conn-group h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  color: #d4a017;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Read-Only Connection Rows */
+.connection-row.read-only {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.connection-row.read-only .conn-header {
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+.connection-row.read-only .conn-path {
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+/* Edit Mode Arrows */
+.connection-row .arrow {
+  color: #aaa;
+  font-weight: bold;
+  padding: 0 4px;
 }

@@ -6,7 +6,15 @@
 
 /goal I want to revisit the way that nodes are displayed. I am unhappy with the current look. Edges are arrows (I thought they were rendered bidirectionally, like I would have wanted, sorry), but the main issue is the density of edges and nodes. Edges run every which direction. I know that relatively dense graphs are hard to visualize, but I want to do better than this. Perhaps the edges have weight to them based on the type of them? Like a position like armbar should be closer to spiderweb than closed-guard, for example, but probably equidistant from both closed-guard and mount. escapes probably have a low pull on their connecting nodes, because they are less likely. I don't know much about visualizing a graph like this, but that seems like a decent place to start, let me know if not.
 
-- adjust moveset.json
+- layout adjustments and animation refactor
 
 - render visualizer/editor
+
+/goal I need to deside on how I want the editing menu to be rendered. The current debug 'sidebar' is incomplete and not well thought-through. I like having the functionality there for now, as it is moreso global settings, but I want a place to read and edit and delete nodes. Perhaps deleting a node can be done another way. It should function well as both, so maybe an edit toggle and keybind would be a good idea, to switch modes? maybe it is cleaner for it to be one view. Most of all, please try to design something that looks good. Be thoughtful with your dimensions. You have my screen size, however, this graph will also be viewed from full screen, 1920x1080. That should help you get a sense of scale.
+
 /goal The goal is to create a sidebar that slides out from the right side of the screen when a user clicks on a node. The sidebar should list all of the available information about the node: edges to and from the node (combined, these edges are bidirectional), as well as any other information.
+
+- adjust moveset.json
+
+- make ergonomical
+    - change tooltip edge information layout. make unnamed capital U Unnamed in the sidebar. allow functionality for dragging new edges or deleting them. merge read and edit mode on the sidebar (sleek appearance of read, functionality of edit) adjust color scheme to be like darcula everywhere including sidebar, graph, tooltip and debug sidebar. it is not very ergonomical when you click a node, can you make the transition smoother? maybe center the node a bit more.

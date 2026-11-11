@@ -124,6 +124,26 @@ class GraphStyleManager {
           "line-style": "dashed",
           opacity: 0.7
         }
+      },
+      {
+        selector: "edge.highlighted",
+        style: {
+          "line-color": "#ffffff",
+          "opacity": 1,
+          "z-index": 10
+        }
+      },
+      {
+        selector: "edge.faded",
+        style: {
+          "opacity": 0.1
+        }
+      },
+      {
+        selector: "node.faded",
+        style: {
+          "opacity": 0.15
+        }
       }
     ];
   }
@@ -538,13 +558,33 @@ class GraphInteractionManager {
       this.styleManager.updateLabelSizing();
     });
 
+    this.cy.on("mouseover", "node", (evt) => {
+      const node = evt.target;
+      const connectedEdges = node.connectedEdges();
+      const connectedNodes = connectedEdges.connectedNodes();
+
+      // Highlight the connected edges
+      connectedEdges.addClass("highlighted");
+
+      // Fade out everything that isn't the node, its edges, or the adjacent nodes
+      const keepVisible = connectedEdges.union(connectedNodes).union(node);
+      this.cy.elements().not(keepVisible).addClass("faded");
+    });
+
+    this.cy.on("mouseout", "node", () => {
+      // Remove the classes when the mouse leaves the node
+      this.cy.elements().removeClass("highlighted").removeClass("faded");
+    });
+
     this.cy.on("tap", "node", (evt) => {
       const node = evt.target;
-      const fractionOfViewport = 0.15
+      const connectedEdges = node.connectedEdges();
+      const connectedNodes = connectedEdges.connectedNodes();
+      const subgraph = connectedEdges.union(connectedNodes).union(node);
+
       this.cy.animate({
-        center: { eles: node },
-        zoom: this.cy.container().clientWidth * fractionOfViewport / node.width(),
-        duration: 300,
+        fit: { eles: subgraph, padding: 60 },
+        duration: 400,
         easing: "ease-in-out"
       });
     });
@@ -572,6 +612,7 @@ class Graph {
   async initialize() {
     try {
       const moveset = await this._fetchMovesetData();
+      this.allMoves = moveset.moves || [];
       const elements = GraphDataProcessor.processMovesetData(moveset);
 
       // Initialize Cytoscape first
@@ -680,6 +721,19 @@ class Graph {
 
       this._wireUpSaveButton();
 
+      document.getElementById("restoreBackup").addEventListener("click", async () => {
+        if (!confirm("Restore moveset.json from the last backup? This will overwrite all changes since the last save.")) return;
+        try {
+          const resp = await fetch("/moveset/restore", { method: "POST" });
+          if (!resp.ok) throw new Error("Failed to restore");
+          window.location.reload();
+        } catch (e) {
+          alert("Error restoring: " + e.message);
+        }
+      });
+
+      this._setupSidebar();
+
     } catch (err) {
       console.error("Failed to initialize graph:", err);
     }
@@ -710,6 +764,274 @@ class Graph {
         btn.disabled = false;
       }
     });
+  }
+
+  _setupSidebar() {
+    this.sidebar = document.getElementById("sidebar");
+    this.graphContainer = document.getElementById("graph-container");
+    this.sbTitle = document.getElementById("sb-title");
+    this.sbType = document.getElementById("sb-type");
+    this.sbArea = document.getElementById("sb-area");
+    this.sbNotes = document.getElementById("sb-notes");
+    this.sbConnections = document.getElementById("sb-connections");
+    this.btnAddConn = document.getElementById("sb-add-conn");
+    this.btnEdit = document.getElementById("sb-edit");
+    this.btnSave = document.getElementById("sb-save");
+    this.btnDelete = document.getElementById("sb-delete");
+    this.activeNode = null;
+    this.activeConnections = [];
+    this.isEditing = false;
+
+    // Persist manual node drags to in-memory data
+    this.cy.on("dragfree", "node", (evt) => {
+      const node = evt.target;
+      node.data("x", node.position("x"));
+      node.data("y", node.position("y"));
+    });
+
+    document.getElementById("sb-close").addEventListener("click", () => this._closeSidebar());
+    
+    this.btnEdit.addEventListener("click", () => {
+      this.isEditing = true;
+      this.sbTitle.removeAttribute("readonly");
+      this.sbType.removeAttribute("readonly");
+      this.sbArea.removeAttribute("readonly");
+      this.sbNotes.removeAttribute("readonly");
+      this.btnEdit.style.display = "none";
+      this.btnSave.style.display = "block";
+      this.btnAddConn.style.display = "block";
+      this._renderConnections();
+    });
+
+    this.btnAddConn.addEventListener("click", () => {
+      this._syncConnectionsFromDOM();
+      this.activeConnections.push({ name: "", type: "Transition", from: [this.activeNode.id()], to: [] });
+      this._renderConnections();
+    });
+
+    this.btnSave.addEventListener("click", async () => {
+      if (!this.activeNode) return;
+      this._syncConnectionsFromDOM();
+
+      const nodeId = this.activeNode.id();
+      const newTitle = this.sbTitle.value.trim();
+      const type = this.sbType.value.trim();
+      const areaStr = this.sbArea.value.trim();
+      const area = areaStr ? areaStr.split(",").map(s => s.trim()).filter(Boolean) : null;
+      const notes = this.sbNotes.value;
+
+      const otherMoves = this.allMoves.filter(m => !m.from.includes(nodeId) && !m.to.includes(nodeId));
+      const finalMoves = [...otherMoves, ...this.activeConnections];
+
+      try {
+        this.btnSave.textContent = "Saving...";
+        this.btnSave.disabled = true;
+        const resp = await fetch(`/moveset/node/${encodeURIComponent(nodeId)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            title: newTitle || nodeId, 
+            type, 
+            area, 
+            notes,
+            moves: finalMoves
+          })
+        });
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || "Failed to save");
+        }
+        
+        this.allMoves = finalMoves;
+        this._closeSidebar();
+        
+        const moveset = await this._fetchMovesetData();
+        const elements = GraphDataProcessor.processMovesetData(moveset);
+        
+        this.cy.elements().remove();
+        this.cy.add(elements);
+        this.cy.style().update();
+        
+        // Fix collapse glitch: Immediately apply saved x/y before running layout
+        this.cy.nodes().forEach(n => {
+          const x = n.data("x");
+          const y = n.data("y");
+          if (x != null && y != null) n.position({ x, y });
+        });
+        this.layoutManager.runLayout("preset", { animate: false });
+        
+      } catch (e) {
+        alert("Error saving: " + e.message);
+      } finally {
+        this.btnSave.textContent = "Save";
+        this.btnSave.disabled = false;
+      }
+    });
+
+    this.btnDelete.addEventListener("click", async () => {
+      if (!this.activeNode) return;
+      const nodeId = this.activeNode.id();
+      if (!confirm(`Delete node "${nodeId}" and all its connections?`)) return;
+
+      try {
+        this.btnDelete.textContent = "Deleting...";
+        this.btnDelete.disabled = true;
+        const resp = await fetch(`/moveset/node/${encodeURIComponent(nodeId)}`, {
+          method: "DELETE"
+        });
+        if (!resp.ok) throw new Error("Failed to delete");
+        
+        this.cy.remove(this.activeNode.connectedEdges());
+        this.cy.remove(this.activeNode);
+        this._closeSidebar();
+      } catch (e) {
+        alert("Error deleting: " + e.message);
+      } finally {
+        this.btnDelete.textContent = "Delete Node";
+        this.btnDelete.disabled = false;
+      }
+    });
+
+    this.cy.on("tap", "node", (evt) => {
+      this._openSidebar(evt.target);
+    });
+  }
+
+  _renderConnections() {
+    this.sbConnections.innerHTML = "";
+    if (!this.activeNode) return;
+    const nodeId = this.activeNode.id();
+
+    const outgoing = this.activeConnections.filter(m => m.from.includes(nodeId));
+    const incoming = this.activeConnections.filter(m => !m.from.includes(nodeId) && m.to.includes(nodeId));
+
+    if (outgoing.length) {
+      const group = document.createElement("div");
+      group.className = "conn-group";
+      group.innerHTML = `<h4>Outgoing</h4>`;
+      outgoing.forEach(m => group.appendChild(this._createConnRow(m)));
+      this.sbConnections.appendChild(group);
+    }
+
+    if (incoming.length) {
+      const group = document.createElement("div");
+      group.className = "conn-group";
+      group.innerHTML = `<h4>Incoming</h4>`;
+      incoming.forEach(m => group.appendChild(this._createConnRow(m)));
+      this.sbConnections.appendChild(group);
+    }
+
+    if (!outgoing.length && !incoming.length) {
+      this.sbConnections.innerHTML = "<div style='color:#aaa;'>No connections</div>";
+    }
+  }
+
+  _createConnRow(m) {
+    const row = document.createElement("div");
+    
+    if (this.isEditing) {
+      row.className = "connection-row";
+      row.innerHTML = `
+        <div class="row-header">
+          <input type="text" class="conn-name" placeholder="Unnamed" value="${m.name || ''}">
+          <select class="conn-type">
+            ${['Transition', 'Finish', 'Escape', 'Takedown', 'Sweep', 'Pass', 'Imposition'].map(t => `<option value="${t}" ${m.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select>
+          <button class="delete-conn">&times;</button>
+        </div>
+        <div class="row-io">
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+            <label style="font-size: 0.7rem; color: #aaa;">FROM</label>
+            <input type="text" class="conn-from" value="${m.from.join(', ')}" placeholder="e.g. Mount">
+          </div>
+          <span class="arrow" style="align-self: flex-end; padding-bottom: 8px;">&rarr;</span>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+            <label style="font-size: 0.7rem; color: #aaa;">TO</label>
+            <input type="text" class="conn-to" value="${m.to.join(', ')}" placeholder="e.g. Spiderweb">
+          </div>
+        </div>
+      `;
+      // Delete row logic
+      row.querySelector(".delete-conn").addEventListener("click", () => {
+        row.remove();
+        this._syncConnectionsFromDOM();
+        this._renderConnections();
+      });
+    } else {
+      row.className = "connection-row read-only";
+      const displayName = m.name ? m.name : `unnamed ${m.type}`;
+      row.innerHTML = `
+        <div class="conn-header"><strong>${displayName}</strong></div>
+        <div class="conn-path">${m.from.join(", ")} &rarr; ${m.to.join(", ")}</div>
+      `;
+    }
+
+    return row;
+  }
+
+  _syncConnectionsFromDOM() {
+    if (!this.isEditing) return;
+    const rows = this.sbConnections.querySelectorAll(".connection-row");
+    const updated = [];
+    rows.forEach(row => {
+      const name = row.querySelector(".conn-name").value.trim();
+      const mtype = row.querySelector(".conn-type").value;
+      const fromStr = row.querySelector(".conn-from").value.trim();
+      const toStr = row.querySelector(".conn-to").value.trim();
+      
+      const from = fromStr ? fromStr.split(",").map(s => s.trim()).filter(Boolean) : [];
+      const to = toStr ? toStr.split(",").map(s => s.trim()).filter(Boolean) : [];
+      
+      if (from.length || to.length) {
+        updated.push({ name: name || undefined, type: mtype, from, to });
+      }
+    });
+    this.activeConnections = updated;
+  }
+
+  _openSidebar(node) {
+    this.activeNode = node;
+    this._exitEditMode();
+
+    const sbName = document.getElementById("sb-name");
+    if (sbName) sbName.textContent = node.id();
+    this.sbTitle.value = node.id();
+    this.sbType.value = node.data("type") || "";
+    this.sbArea.value = (node.data("area") || []).join(", ");
+    this.sbNotes.value = node.data("notes") || "";
+
+    const connectedMoves = this.allMoves.filter(m => 
+      m.from.includes(node.id()) || m.to.includes(node.id())
+    );
+    this.activeConnections = connectedMoves.map(m => JSON.parse(JSON.stringify(m)));
+
+    this._renderConnections();
+
+    this.sidebar.classList.add("open");
+    this.graphContainer.classList.add("sidebar-open");
+    
+    setTimeout(() => { this.cy.resize(); }, 310);
+  }
+
+  _closeSidebar() {
+    this.sidebar.classList.remove("open");
+    this.graphContainer.classList.remove("sidebar-open");
+    this.activeNode = null;
+    const sbName = document.getElementById("sb-name");
+    if (sbName) sbName.textContent = "Node Inspector";
+    
+    setTimeout(() => { this.cy.resize(); }, 310);
+  }
+
+  _exitEditMode() {
+    this.isEditing = false;
+    this.sbTitle.setAttribute("readonly", true);
+    this.sbType.setAttribute("readonly", true);
+    this.sbArea.setAttribute("readonly", true);
+    this.sbNotes.setAttribute("readonly", true);
+    this.btnEdit.style.display = "block";
+    this.btnSave.style.display = "none";
+    this.btnAddConn.style.display = "none";
   }
 
   async savePositions() {

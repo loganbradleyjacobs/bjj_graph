@@ -83,17 +83,20 @@
     "Top Side Control": {
       "type": "Control",
       "x": 274.2837589519442,
-      "y": -248.1792802421221
+      "y": -248.1792802421221,
+      "notes": ""
     },
     "Bottom Side Control": {
       "type": "Control",
       "x": 147.31508420648683,
-      "y": -183.60156010292496
+      "y": -183.60156010292496,
+      "notes": "Elbow to knee connection"
     },
     "Bottom Mount": {
       "type": "Control",
       "x": 95.90247217362194,
-      "y": 140.65477611783996
+      "y": 140.65477611783996,
+      "notes": ""
     },
     "Stack Guard": {
       "type": "Predicament",
@@ -162,11 +165,6 @@
       "x": 406.4847593095116,
       "y": -458.63968267331506
     },
-    "Bottom Kimura": {
-      "type": "Submission",
-      "x": -304.35338087487276,
-      "y": -160.69592983917636
-    },
     "Top North South": {
       "type": "Control",
       "x": 260.6471677362435,
@@ -214,7 +212,8 @@
     "Arm Triangle": {
       "type": "Submission",
       "x": -77.04211164687993,
-      "y": 177.042279570993
+      "y": 177.042279570993,
+      "notes": ""
     },
     "Ezekiel": {
       "type": "Submission",
@@ -234,26 +233,15 @@
       "notes": "Retention:\n- Leg heavy across the neck, foot on the hip\n- Stay on your side, not flat on your back\n- Knees pinched, their arm trapped between them\n- If they posture, follow with your hips, not your arms\n\nEscapes to expect:\n- Stack defense (they drive forward to compress you)\n- Hand-fight the wrist, extract the arm, recover\n- Hitchhiker roll once the arm starts extending (see Armbar)",
       "x": 10.201421204518862,
       "y": 315.39052416530717
+    },
+    "Bottom Kimura": {
+      "type": "Submission",
+      "x": -304.35338087487276,
+      "y": -160.69592983917636,
+      "notes": ""
     }
   },
   "moves": [
-    {
-      "name": "Double Leg Takedown",
-      "type": "Takedown",
-      "from": [
-        "Standing"
-      ],
-      "to": [
-        "Top Half Guard",
-        "Top Full Guard",
-        "Top Side Control"
-      ],
-      "area": [
-        "Standing",
-        "Clinch"
-      ],
-      "notes": "Level change first, then shoot. Lead knee to the mat between their feet, head to the outside hip (never the inside - guillotine). Hands on the backs of the knees, pull the ankles out, finish with a lift and turn. If they sprawl, keep your hips under you and circle up rather than reaching for a bad shot."
-    },
     {
       "type": "Finish",
       "from": [
@@ -377,33 +365,6 @@
         "Mount"
       ],
       "to": [
-        "Arm Triangle"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Arm Triangle"
-      ],
-      "to": [
-        "Mount"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Arm Triangle"
-      ],
-      "to": [
-        "Top Side Control"
-      ]
-    },
-    {
-      "type": "Finish",
-      "from": [
-        "Mount"
-      ],
-      "to": [
         "Ezekiel"
       ]
     },
@@ -450,15 +411,6 @@
       ],
       "to": [
         "Top Quarter Guard"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Top Full Guard"
-      ],
-      "to": [
-        "Top Side Control"
       ]
     },
     {
@@ -588,15 +540,6 @@
       ]
     },
     {
-      "type": "Finish",
-      "from": [
-        "Bottom Full Guard"
-      ],
-      "to": [
-        "Triangle"
-      ]
-    },
-    {
       "type": "Transition",
       "from": [
         "Giftwrap"
@@ -617,33 +560,6 @@
     {
       "type": "Transition",
       "from": [
-        "Top Kesa Getame"
-      ],
-      "to": [
-        "Top Side Control"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Bottom Kesa Getame"
-      ],
-      "to": [
-        "Bottom Side Control"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Bottom Kesa Getame"
-      ],
-      "to": [
-        "Top Side Control"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
         "Bottom Kesa Getame"
       ],
       "to": [
@@ -656,61 +572,7 @@
         "Bottom Half Guard"
       ],
       "to": [
-        "Bottom Side Control"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Bottom Half Guard"
-      ],
-      "to": [
         "Back Control"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Bottom Half Guard"
-      ],
-      "to": [
-        "Top Side Control"
-      ]
-    },
-    {
-      "type": "Finish",
-      "from": [
-        "Bottom Half Guard"
-      ],
-      "to": [
-        "Bottom Kimura"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Bottom Half Guard"
-      ],
-      "to": [
-        "Bottom Mount"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Top Side Control"
-      ],
-      "to": [
-        "Top Half Guard"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Top Side Control"
-      ],
-      "to": [
-        "Top North South"
       ]
     },
     {
@@ -725,37 +587,55 @@
     {
       "type": "Finish",
       "from": [
-        "Top Side Control"
+        "Mount"
       ],
       "to": [
-        "Top Kimura"
+        "Cross Collar Choke"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Cross Collar Choke"
+      ],
+      "to": [
+        "Mount"
       ]
     },
     {
       "type": "Transition",
       "from": [
-        "Top Side Control"
+        "Butterfly Guard"
       ],
       "to": [
-        "Straight Arm Lock"
+        "Bottom Full Guard"
       ]
     },
     {
-      "type": "Transition",
+      "type": "Finish",
       "from": [
-        "Bottom Mount"
+        "Mount"
       ],
       "to": [
-        "Bottom Side Control"
+        "Arm Triangle"
       ]
     },
     {
-      "type": "Transition",
+      "type": "Escape",
       "from": [
-        "Bottom Mount"
+        "Arm Triangle"
       ],
       "to": [
-        "Top Full Guard"
+        "Mount"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Arm Triangle"
+      ],
+      "to": [
+        "Chair Sit Ezekiel"
       ]
     },
     {
@@ -802,15 +682,6 @@
         "Spiderweb"
       ],
       "to": [
-        "Bottom Side Control"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Spiderweb"
-      ],
-      "to": [
         "Stack Guard"
       ]
     },
@@ -824,28 +695,6 @@
       ]
     },
     {
-      "name": "Hitchhiker Escape",
-      "type": "Escape",
-      "from": [
-        "Armbar"
-      ],
-      "to": [
-        "Bottom Side Control"
-      ],
-      "notes": "Roll over the trapped shoulder (the one opposite the leg crossing the neck) while hiding the elbow. Works best once the arm is extending - the attacker's commitment is what makes the roll available. The extension threat you are trading against is real, so commit fully. Lands in bottom side control if clean, recovers to guard if they release to avoid the roll."
-    },
-    {
-      "name": "Roll-through to Standard Triangle",
-      "type": "Transition",
-      "from": [
-        "Mounted Triangle"
-      ],
-      "to": [
-        "Triangle"
-      ],
-      "notes": "Roll over the trapped shoulder. The lock stays; the position becomes a standard guard triangle. Finish is identical from there - you are not escaping, you are reconfiguring."
-    },
-    {
       "type": "Transition",
       "from": [
         "S Mount"
@@ -855,21 +704,69 @@
       ]
     },
     {
-      "type": "Finish",
+      "type": "Transition",
       "from": [
-        "Mount"
+        "Bottom Half Guard"
       ],
       "to": [
-        "Cross Collar Choke"
+        "Bottom Mount"
       ]
     },
     {
-      "type": "Escape",
+      "type": "Transition",
       "from": [
-        "Cross Collar Choke"
+        "Bottom Moun"
       ],
       "to": [
-        "Mount"
+        "Top Full Guard"
+      ]
+    },
+    {
+      "name": "Shoot Triangle",
+      "type": "Finish",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Triangle"
+      ]
+    },
+    {
+      "name": "Roll-through to Standard Triangle",
+      "type": "Finish",
+      "from": [
+        "Mounted Triangle"
+      ],
+      "to": [
+        "Triangle"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Kesa Getame"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "name": "Hitchhiker Escape",
+      "type": "Escape",
+      "from": [
+        "Armbar"
+      ],
+      "to": [
+        "Bottom Side Control"
       ]
     },
     {
@@ -882,21 +779,101 @@
       ]
     },
     {
-      "type": "Finish",
+      "type": "Escape",
       "from": [
-        "Arm Triangle"
+        "Spiderweb"
       ],
       "to": [
-        "Chair Sit Ezekiel"
+        "Bottom Side Control"
       ]
     },
     {
       "type": "Transition",
       "from": [
-        "Butterfly Guard"
+        "Bottom Mount"
       ],
       "to": [
-        "Bottom Full Guard"
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "name": "Opponent recomposed Half Guard",
+      "type": "Imposition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Top Half Guard"
+      ]
+    },
+    {
+      "name": "Opponent moved to North South",
+      "type": "Imposition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Top North South"
+      ]
+    },
+    {
+      "name": "Take Kimura grip",
+      "type": "Finish",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Top Kimura"
+      ]
+    },
+    {
+      "name": "Isolate Arm",
+      "type": "Transition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Straight Arm Lock"
+      ]
+    },
+    {
+      "name": "Double Leg Takedown",
+      "type": "Takedown",
+      "from": [
+        "Standing"
+      ],
+      "to": [
+        "Top Half Guard",
+        "Top Full Guard",
+        "Top Side Control"
+      ]
+    },
+    {
+      "name": "Opponent moved to Side Control",
+      "type": "Imposition",
+      "from": [
+        "Top Kesa Getame"
+      ],
+      "to": [
+        "Top Side Control"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Arm Triangle"
+      ],
+      "to": [
+        "Top Side Control"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Bottom Kimura"
       ]
     }
   ]

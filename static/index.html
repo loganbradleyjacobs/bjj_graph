@@ -15,7 +15,9 @@
     <script src="/static/app.js" defer></script>
   </head>
   <body>
-    <div id="cy"></div>
+    <div id="graph-container">
+      <div id="cy"></div>
+    </div>
     <div class="layout-toggle">
       <span class="row">
         Layout:
@@ -44,6 +46,7 @@
       </span>
       <span class="row">
         <button id="savePositions">Save positions</button>
+        <button id="restoreBackup" style="margin-left: 8px; background: rgba(220, 50, 50, 0.2); color: #ff8888;">Restore Backup</button>
         <span id="saveStatus" class="save-status"></span>
       </span>
       <span class="row">
@@ -61,5 +64,45 @@
         <input type="color" id="edgeColorPicker" value="#AAFDE9">
       </span>
     </div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <h2 id="sb-name">Node Inspector</h2>
+        <button id="sb-close" class="icon-btn">&times;</button>
+      </div>
+      
+      <div class="sidebar-content">
+        <div class="form-group">
+          <label>TITLE</label>
+          <input type="text" id="sb-title" readonly>
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <input type="text" id="sb-type" readonly>
+        </div>
+        <div class="form-group">
+          <label>Area (comma separated)</label>
+          <input type="text" id="sb-area" readonly>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="sb-notes" rows="6" readonly></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label style="display: flex; justify-content: space-between;">
+            Connections
+            <button id="sb-add-conn" class="btn small" style="display:none;">+ Add</button>
+          </label>
+          <div id="sb-connections" class="connections-container"></div>
+        </div>
+      </div>
+      
+      <div class="sidebar-footer">
+        <button id="sb-edit" class="btn">Edit</button>
+        <button id="sb-save" class="btn primary" style="display:none;">Save</button>
+        <button id="sb-delete" class="btn danger">Delete Node</button>
+      </div>
+    </aside>
   </body>
 </html>

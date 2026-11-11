@@ -1,5 +1,5 @@
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -75,3 +75,93 @@ def save_positions(payload: dict):
     moveset_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     return {"saved": saved, "skipped": skipped, "total": len(nodes)}
+@app.put("/moveset/node/{node_id}")
+async def update_node(node_id: str, request: Request):
+    # Parse raw JSON to avoid Pydantic 422 validation errors on null/optional fields
+    payload = await request.json()
+    title = payload.get("title", "").strip()
+    node_type = payload.get("type", "").strip()
+    area = payload.get("area")
+    notes = payload.get("notes", "")
+    moves = payload.get("moves")
+
+    if not title:
+        raise HTTPException(status_code=400, detail="Title cannot be empty")
+
+    moveset_path = BASE_DIR / "moveset.json"
+    if not moveset_path.exists():
+        raise HTTPException(status_code=404, detail="moveset.json not found")
+
+    data = json.loads(moveset_path.read_text(encoding="utf-8"))
+    nodes = data.get("positions") or {}
+
+    if node_id not in nodes:
+        raise HTTPException(status_code=404, detail=f"Node {node_id} not found")
+
+    if title != node_id and title in nodes:
+        raise HTTPException(status_code=400, detail="A node with that title already exists")
+
+    # Update node properties
+    node = nodes[node_id]
+    node["type"] = node_type
+    node["notes"] = notes
+    if area:
+        node["area"] = area
+    elif "area" in node:
+        del node["area"]
+
+    # Handle Rename
+    if title != node_id:
+        nodes[title] = nodes.pop(node_id)
+
+    # Handle Moves Update
+    if moves is not None:
+        if title != node_id:
+            for m in moves:
+                if "from" in m:
+                    m["from"] = [title if x == node_id else x for x in m["from"]]
+                if "to" in m:
+                    m["to"] = [title if x == node_id else x for x in m["to"]]
+        data["moves"] = moves
+
+    backup_path = moveset_path.with_suffix(".json.bak")
+    backup_path.write_text(moveset_path.read_text(encoding="utf-8"), encoding="utf-8")
+    moveset_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    return {"status": "success"}
+
+@app.delete("/moveset/node/{node_id}")
+def delete_node(node_id: str):
+    moveset_path = BASE_DIR / "moveset.json"
+    if not moveset_path.exists():
+        raise HTTPException(status_code=404, detail="moveset.json not found")
+        
+    data = json.loads(moveset_path.read_text(encoding="utf-8"))
+    nodes = data.get("positions") or {}
+    
+    if node_id not in nodes:
+        raise HTTPException(status_code=404, detail="Node not found")
+        
+    del nodes[node_id]
+    
+    # Cleanup moves so we don't leave dangling edges
+    moves = data.get("moves") or []
+    data["moves"] = [
+        m for m in moves 
+        if node_id not in m.get("from", []) and node_id not in m.get("to", [])
+    ]
+    
+    backup_path = moveset_path.with_suffix(".json.bak")
+    backup_path.write_text(moveset_path.read_text(encoding="utf-8"), encoding="utf-8")
+    moveset_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    
+    return {"status": "success"}
+
+@app.post("/moveset/restore")
+def restore_moveset():
+    moveset_path = BASE_DIR / "moveset.json"
+    backup_path = moveset_path.with_suffix(".json.bak")
+    if not backup_path.exists():
+        raise HTTPException(status_code=404, detail="No backup found")
+    moveset_path.write_text(backup_path.read_text(encoding="utf-8"), encoding="utf-8")
+    return {"status": "restored"}
