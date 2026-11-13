@@ -61,46 +61,72 @@
         </span>
         <span class="row">
         Edge color:
-        <input type="color" id="edgeColorPicker" value="#AAFDE9">
+        <input type="color" id="edgeColorPicker" value="#A9B7C6">
       </span>
     </div>
 
     <aside id="sidebar" class="sidebar">
+      <div id="sb-resize-handle" class="resize-handle"></div>
+      
       <div class="sidebar-header">
         <h2 id="sb-name">Node Inspector</h2>
         <button id="sb-close" class="icon-btn">&times;</button>
       </div>
       
-      <div class="sidebar-content">
+      <div id="sb-multi-select" class="sidebar-content" style="display: none;">
+        <h3>Selected Nodes</h3>
+        <ul id="sb-multi-list" class="multi-list"></ul>
+      </div>
+
+      <div id="sb-single-content" class="sidebar-content">
         <div class="form-group">
           <label>TITLE</label>
-          <input type="text" id="sb-title" readonly>
+          <input type="text" id="sb-title" placeholder="e.g. Mount">
         </div>
         <div class="form-group">
           <label>Type</label>
-          <input type="text" id="sb-type" readonly>
+          <select id="sb-type">
+            <option value="Guard">Guard</option>
+            <option value="Pass">Pass</option>
+            <option value="Predicament">Predicament</option>
+            <option value="Submission">Submission</option>
+            <option value="Takedown">Takedown</option>
+            <option value="Control">Control</option>
+            <option value="Neutral">Neutral</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>Area (comma separated)</label>
-          <input type="text" id="sb-area" readonly>
+          <label>Area</label>
+          <div class="area-checkboxes">
+            <label><input type="checkbox" value="Ground" class="sb-area-cb"> Ground</label>
+            <label><input type="checkbox" value="Standing" class="sb-area-cb"> Standing</label>
+            <label><input type="checkbox" value="Clinch" class="sb-area-cb"> Clinch</label>
+          </div>
         </div>
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none;">
+            <input type="checkbox" id="sb-stub" style="width: auto; margin: 0;">
+            Temporary Stub (Dashed)
+          </label>
+        </div>
+
         <div class="form-group">
           <label>Notes</label>
-          <textarea id="sb-notes" rows="6" readonly></textarea>
+          <textarea id="sb-notes" rows="6"></textarea>
         </div>
         
         <div class="form-group">
-          <label style="display: flex; justify-content: space-between;">
-            Connections
-            <button id="sb-add-conn" class="btn small" style="display:none;">+ Add</button>
-          </label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="margin-bottom: 0;">Connections</label>
+            <button id="sb-add-conn" class="btn small" style="padding: 4px 10px; font-size: 0.8rem; background: var(--accent); color: #fff;">+ Add Edge</button>
+          </div>
           <div id="sb-connections" class="connections-container"></div>
         </div>
       </div>
       
       <div class="sidebar-footer">
-        <button id="sb-edit" class="btn">Edit</button>
-        <button id="sb-save" class="btn primary" style="display:none;">Save</button>
+        <button id="sb-edit" class="btn" style="display:none;">Edit</button>
+        <button id="sb-save" class="btn primary">Save Node</button>
         <button id="sb-delete" class="btn danger">Delete Node</button>
       </div>
     </aside>

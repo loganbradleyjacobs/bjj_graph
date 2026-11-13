@@ -1,17 +1,17 @@
 // Configuration module
 const CONFIG = {
-  edgeColor: "#AAFDE9",
+  edgeColor: "#A9B7C6",
   nodeColors: {
-    "Guard": "#1f77b4",
-    "Pass": "#ff7f0e",
-    "Predicament": "#d4a017",
-    "Submission": "#d62728",
-    "Takedown": "#DEB887",
-    "Control": "#379a1c",
-    "Neutral": "#9b59b6",
-    "Transition": "#888",
+    "Guard": "#6897BB",       // Darcula blue
+    "Pass": "#CC7832",        // Darcula orange
+    "Predicament": "#FFC66D", // Darcula yellow
+    "Submission": "#F92672",  // Darcula pink/red
+    "Takedown": "#A9B7C6",    // Darcula grey
+    "Control": "#9876AA",     // Darcula purple
+    "Neutral": "#9876AA",
+    "Transition": "#808080",
     "Unknown": "#ff5555",
-    "default": "#888"
+    "default": "#A9B7C6"
   }
 };
 
@@ -125,6 +125,22 @@ class GraphStyleManager {
           opacity: 0.7
         }
       },
+      // Edge style variants (used by updateEdgeStyle class-based switching)
+      { selector: "edge.curve-straight", style: { "curve-style": "straight" } },
+      { selector: "edge.curve-bezier", style: { "curve-style": "bezier" } },
+      { selector: "edge.curve-unbundled-bezier", style: { "curve-style": "unbundled-bezier" } },
+      { selector: "edge.curve-haystack", style: { "curve-style": "haystack" } },
+      { selector: "edge.curve-segments", style: { "curve-style": "segments" } },
+      { selector: "edge.curve-taxi", style: { "curve-style": "taxi" } },
+      // Overlap avoidance (must come after curve-* rules so it wins on specificity tie)
+      {
+        selector: "edge.avoid-overlap",
+        style: {
+          "curve-style": "unbundled-bezier",
+          "control-point-distances": 60,
+          "control-point-weights": 0.5,
+        }
+      },
       {
         selector: "edge.highlighted",
         style: {
@@ -152,6 +168,7 @@ class GraphStyleManager {
     return {
       //text
       label: (ele) => ele.data("label"),
+      "font-family": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       "font-size": (ele) => ele.width() * 0.2,
       color: "#fff",
       "text-valign": "center",
@@ -211,7 +228,10 @@ class GraphStyleManager {
   }
 
   updateEdgeStyle(mode) {
-    this.cy.edges().style("curve-style", mode);
+    const curveClasses = "curve-straight curve-bezier curve-unbundled-bezier curve-haystack curve-segments curve-taxi";
+    this.cy.edges().removeClass(curveClasses);
+    this.cy.edges().addClass(`curve-${mode}`);
+    this.detectOverlappingEdges();
   }
 
   updateLabelSizing() {
@@ -223,12 +243,53 @@ class GraphStyleManager {
       });
     });
   }
+
+  detectOverlappingEdges() {
+    const ANGLE_THRESHOLD = 0.98; // cos(~11°)
+
+    this.cy.batch(() => {
+      // Reset all previous overlap classifications
+      this.cy.edges().removeClass("avoid-overlap");
+
+      this.cy.nodes().forEach(node => {
+        const nodePos = node.position();
+        const connected = node.connectedEdges();
+        if (connected.length < 2) return;
+
+        // For each connected edge, compute vector from this node to the other endpoint
+        const vectors = connected.map(edge => {
+          const other = edge.source().id() === node.id() ? edge.target() : edge.source();
+          const otherPos = other.position();
+          const dx = otherPos.x - nodePos.x;
+          const dy = otherPos.y - nodePos.y;
+          return { edge, dx, dy, len: Math.sqrt(dx * dx + dy * dy) || 1 };
+        }).sort((a, b) => a.len - b.len);
+
+        // Check every pair
+        for (let i = 0; i < vectors.length; i++) {
+          for (let j = i + 1; j < vectors.length; j++) {
+            const v1 = vectors[i];
+            const v2 = vectors[j];
+            const u1x = v1.dx / v1.len, u1y = v1.dy / v1.len;
+            const u2x = v2.dx / v2.len, u2y = v2.dy / v2.len;
+            const dot = u1x * u2x + u1y * u2y;
+
+            // If nearly parallel and v2 is further (guaranteed by sort order), curve v2
+            if (dot > ANGLE_THRESHOLD) {
+              v2.edge.addClass("avoid-overlap");
+            }
+          }
+        }
+      });
+    });
+  }
 }
 
 // Layout manager
 class GraphLayoutManager {
-  constructor(cy) {
+  constructor(cy, styleManager) {
     this.cy = cy;
+    this.styleManager = styleManager;
     this._activeLayout = null;
     this._layoutToken = 0;
   }
@@ -283,6 +344,7 @@ class GraphLayoutManager {
     if (!animate) {
       nodes.forEach(n => n.position({ x: n.data("x"), y: n.data("y") }));
       this.cy.fit(undefined, 40);
+      if (this.styleManager) this.styleManager.detectOverlappingEdges();
       return;
     }
 
@@ -347,6 +409,11 @@ class GraphLayoutManager {
         nodes.stop();
       },
     };
+
+    // Schedule overlap detection after the animation completes
+    if (this.styleManager) {
+      setTimeout(() => this.styleManager.detectOverlappingEdges(), duration + 150);
+    }
   }
 
   _applyConcentricLayout() {
@@ -439,6 +506,10 @@ class GraphTooltipManager {
     this.cy.on("mouseover", "edge", evt => this._showEdgeTooltip(evt));
     this.cy.on("mousemove", evt => this._moveTooltip(evt));
     this.cy.on("mouseout", "node, edge", () => this._hideTooltip());
+
+    // Fix tooltip ghosting when moving into the sidebar or leaving the canvas
+    document.getElementById("cy").addEventListener("mouseleave", () => this._hideTooltip());
+    document.getElementById("sidebar").addEventListener("mouseenter", () => this._hideTooltip());
   }
 
   _showNodeTooltip(evt) {
@@ -450,13 +521,13 @@ class GraphTooltipManager {
 
     const incoming = node.incomers("edge").map(e => {
       const kind = e.data("moveType") || "transition";
-      const nm = e.data("label") ? ` — ${escape(e.data("label"))}` : "";
-      return `&nbsp;&nbsp;← ${escape(e.source().id())} (${escape(kind)}${nm})`;
+      const nm = e.data("label") ? `: ${escape(e.data("label"))}` : "";
+      return `&nbsp;&nbsp;← ${escape(kind)}${nm} (from ${escape(e.source().id())})`;
     });
     const outgoing = node.outgoers("edge").map(e => {
       const kind = e.data("moveType") || "transition";
-      const nm = e.data("label") ? ` — ${escape(e.data("label"))}` : "";
-      return `&nbsp;&nbsp;→ ${escape(e.target().id())} (${escape(kind)}${nm})`;
+      const nm = e.data("label") ? `: ${escape(e.data("label"))}` : "";
+      return `&nbsp;&nbsp;→ ${escape(kind)}${nm} (to ${escape(e.target().id())})`;
     });
 
     const parts = [
@@ -535,10 +606,11 @@ class GraphTooltipManager {
 
 // Interaction manager
 class GraphInteractionManager {
-  constructor(cy, layoutSelect, edgeStyleSelect) {
+  constructor(cy, layoutSelect, edgeStyleSelect, graphRef) {
     this.cy = cy;
     this.layoutSelect = layoutSelect;
     this.edgeStyleSelect = edgeStyleSelect;
+    this.graphRef = graphRef;
     this.layoutManager = new GraphLayoutManager(cy);
     this.styleManager = new GraphStyleManager(cy);
     this._setupEventListeners();
@@ -576,6 +648,16 @@ class GraphInteractionManager {
       this.cy.elements().removeClass("highlighted").removeClass("faded");
     });
 
+    // Remove the old tap handlers and use select/unselect to drive the sidebar
+    this.cy.on("select", "node", () => {
+      this.graphRef._handleSelectionChange();
+    });
+
+    this.cy.on("unselect", "node", () => {
+      this.graphRef._handleSelectionChange();
+    });
+
+    // Keep the tap handler for the camera zoom only
     this.cy.on("tap", "node", (evt) => {
       const node = evt.target;
       const connectedEdges = node.connectedEdges();
@@ -583,10 +665,16 @@ class GraphInteractionManager {
       const subgraph = connectedEdges.union(connectedNodes).union(node);
 
       this.cy.animate({
-        fit: { eles: subgraph, padding: 60 },
-        duration: 400,
+        fit: { eles: subgraph, padding: 120 },
+        duration: 600,
         easing: "ease-in-out"
       });
+    });
+
+    this.cy.on("tap", (evt) => {
+      if (evt.target === this.cy) {
+        this.cy.elements().unselect();
+      }
     });
   }
 
@@ -627,11 +715,12 @@ class Graph {
       this.styleManager = new GraphStyleManager(this.cy);
       this.cy.style().fromJson(this.styleManager.getBaseStyles()).update();
 
-      this.layoutManager = new GraphLayoutManager(this.cy);
+      this.layoutManager = new GraphLayoutManager(this.cy, this.styleManager);
       this.interactionManager = new GraphInteractionManager(
         this.cy,
         this.layoutSelect,
-        this.edgeStyleSelect
+        this.edgeStyleSelect,
+        this
       );
       this.tooltipManager = new GraphTooltipManager(this.cy);
 
@@ -734,6 +823,9 @@ class Graph {
 
       this._setupSidebar();
 
+      this.cy.on("layoutstop", () => this.styleManager.detectOverlappingEdges());
+      this.cy.on("dragfree", "node", () => this.styleManager.detectOverlappingEdges());
+
     } catch (err) {
       console.error("Failed to initialize graph:", err);
     }
@@ -771,18 +863,16 @@ class Graph {
     this.graphContainer = document.getElementById("graph-container");
     this.sbTitle = document.getElementById("sb-title");
     this.sbType = document.getElementById("sb-type");
-    this.sbArea = document.getElementById("sb-area");
     this.sbNotes = document.getElementById("sb-notes");
+    this.sbStub = document.getElementById("sb-stub");
     this.sbConnections = document.getElementById("sb-connections");
     this.btnAddConn = document.getElementById("sb-add-conn");
-    this.btnEdit = document.getElementById("sb-edit");
     this.btnSave = document.getElementById("sb-save");
     this.btnDelete = document.getElementById("sb-delete");
     this.activeNode = null;
     this.activeConnections = [];
-    this.isEditing = false;
+    this.isCreating = false;
 
-    // Persist manual node drags to in-memory data
     this.cy.on("dragfree", "node", (evt) => {
       const node = evt.target;
       node.data("x", node.position("x"));
@@ -790,35 +880,66 @@ class Graph {
     });
 
     document.getElementById("sb-close").addEventListener("click", () => this._closeSidebar());
-    
-    this.btnEdit.addEventListener("click", () => {
-      this.isEditing = true;
-      this.sbTitle.removeAttribute("readonly");
-      this.sbType.removeAttribute("readonly");
-      this.sbArea.removeAttribute("readonly");
-      this.sbNotes.removeAttribute("readonly");
-      this.btnEdit.style.display = "none";
-      this.btnSave.style.display = "block";
-      this.btnAddConn.style.display = "block";
+
+    this.btnAddConn.style.display = "block";
+    this.btnAddConn.addEventListener("click", () => {
+      this._syncConnectionsFromDOM();
+      // If creating a new node, use the title input as the 'from' node (or leave blank)
+      const fromNode = this.activeNode ? this.activeNode.id() : (this.sbTitle.value.trim() || "New Node");
+      this.activeConnections.push({ name: "", type: "Transition", from: [fromNode], to: [] });
       this._renderConnections();
     });
 
-    this.btnAddConn.addEventListener("click", () => {
-      this._syncConnectionsFromDOM();
-      this.activeConnections.push({ name: "", type: "Transition", from: [this.activeNode.id()], to: [] });
-      this._renderConnections();
+    // --- Sidebar Resize Logic ---
+    const resizeHandle = document.getElementById("sb-resize-handle");
+    let isResizing = false;
+    let startX, startWidth;
+
+    resizeHandle.addEventListener("mousedown", (e) => {
+      isResizing = true;
+      startX = e.clientX;
+      startWidth = parseInt(document.defaultView.getComputedStyle(this.sidebar).width, 10);
+      this.sidebar.classList.add("resizing");
+      resizeHandle.classList.add("dragging");
+      document.body.style.cursor = "col-resize";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isResizing) return;
+
+      // Dragging left increases width
+      const dx = startX - e.clientX;
+      let newWidth = startWidth + dx;
+
+      // Clamp width between 320px and 800px
+      newWidth = Math.max(320, Math.min(800, newWidth));
+
+      document.documentElement.style.setProperty("--sidebar-width", `${newWidth}px`);
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!isResizing) return;
+      isResizing = false;
+      this.sidebar.classList.remove("resizing");
+      resizeHandle.classList.remove("dragging");
+      document.body.style.cursor = "default";
+
+      // Trigger Cytoscape to resize canvas after CSS settles
+      this.cy.resize();
     });
 
     this.btnSave.addEventListener("click", async () => {
-      if (!this.activeNode) return;
       this._syncConnectionsFromDOM();
 
-      const nodeId = this.activeNode.id();
       const newTitle = this.sbTitle.value.trim();
-      const type = this.sbType.value.trim();
-      const areaStr = this.sbArea.value.trim();
-      const area = areaStr ? areaStr.split(",").map(s => s.trim()).filter(Boolean) : null;
+      if (!newTitle) return alert("Title is required");
+
+      const type = this.sbType.value;
+      const area = Array.from(document.querySelectorAll(".sb-area-cb:checked")).map(cb => cb.value);
       const notes = this.sbNotes.value;
+
+      const isNew = !this.activeNode;
+      const nodeId = isNew ? newTitle : this.activeNode.id();
 
       const otherMoves = this.allMoves.filter(m => !m.from.includes(nodeId) && !m.to.includes(nodeId));
       const finalMoves = [...otherMoves, ...this.activeConnections];
@@ -826,14 +947,18 @@ class Graph {
       try {
         this.btnSave.textContent = "Saving...";
         this.btnSave.disabled = true;
-        const resp = await fetch(`/moveset/node/${encodeURIComponent(nodeId)}`, {
-          method: "PUT",
+        const url = isNew ? "/moveset/node" : `/moveset/node/${encodeURIComponent(nodeId)}`;
+        const method = isNew ? "POST" : "PUT";
+
+        const resp = await fetch(url, {
+          method: method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            title: newTitle || nodeId, 
-            type, 
-            area, 
+          body: JSON.stringify({
+            title: newTitle,
+            type,
+            area,
             notes,
+            stub: this.sbStub.checked, // Add this line
             moves: finalMoves
           })
         });
@@ -841,29 +966,28 @@ class Graph {
           const err = await resp.json();
           throw new Error(err.detail || "Failed to save");
         }
-        
-        this.allMoves = finalMoves;
+
         this._closeSidebar();
         
         const moveset = await this._fetchMovesetData();
+        this.allMoves = moveset.moves || []; // Sync allMoves with newly created nodes
         const elements = GraphDataProcessor.processMovesetData(moveset);
         
         this.cy.elements().remove();
         this.cy.add(elements);
         this.cy.style().update();
-        
-        // Fix collapse glitch: Immediately apply saved x/y before running layout
+
         this.cy.nodes().forEach(n => {
           const x = n.data("x");
           const y = n.data("y");
           if (x != null && y != null) n.position({ x, y });
         });
         this.layoutManager.runLayout("preset", { animate: false });
-        
+
       } catch (e) {
         alert("Error saving: " + e.message);
       } finally {
-        this.btnSave.textContent = "Save";
+        this.btnSave.textContent = isNew ? "Create Node" : "Save Node";
         this.btnSave.disabled = false;
       }
     });
@@ -876,11 +1000,9 @@ class Graph {
       try {
         this.btnDelete.textContent = "Deleting...";
         this.btnDelete.disabled = true;
-        const resp = await fetch(`/moveset/node/${encodeURIComponent(nodeId)}`, {
-          method: "DELETE"
-        });
+        const resp = await fetch(`/moveset/node/${encodeURIComponent(nodeId)}`, { method: "DELETE" });
         if (!resp.ok) throw new Error("Failed to delete");
-        
+
         this.cy.remove(this.activeNode.connectedEdges());
         this.cy.remove(this.activeNode);
         this._closeSidebar();
@@ -890,10 +1012,6 @@ class Graph {
         this.btnDelete.textContent = "Delete Node";
         this.btnDelete.disabled = false;
       }
-    });
-
-    this.cy.on("tap", "node", (evt) => {
-      this._openSidebar(evt.target);
     });
   }
 
@@ -909,7 +1027,7 @@ class Graph {
       const group = document.createElement("div");
       group.className = "conn-group";
       group.innerHTML = `<h4>Outgoing</h4>`;
-      outgoing.forEach(m => group.appendChild(this._createConnRow(m)));
+      outgoing.forEach(m => group.appendChild(this._createConnRow(m, true)));
       this.sbConnections.appendChild(group);
     }
 
@@ -917,60 +1035,66 @@ class Graph {
       const group = document.createElement("div");
       group.className = "conn-group";
       group.innerHTML = `<h4>Incoming</h4>`;
-      incoming.forEach(m => group.appendChild(this._createConnRow(m)));
+      incoming.forEach(m => group.appendChild(this._createConnRow(m, false)));
       this.sbConnections.appendChild(group);
     }
 
     if (!outgoing.length && !incoming.length) {
-      this.sbConnections.innerHTML = "<div style='color:#aaa;'>No connections</div>";
+      this.sbConnections.innerHTML = "<div style='color:#888;'>No connections</div>";
     }
   }
 
-  _createConnRow(m) {
+  _createConnRow(m, isOutgoing) {
     const row = document.createElement("div");
-    
-    if (this.isEditing) {
-      row.className = "connection-row";
-      row.innerHTML = `
-        <div class="row-header">
-          <input type="text" class="conn-name" placeholder="Unnamed" value="${m.name || ''}">
-          <select class="conn-type">
-            ${['Transition', 'Finish', 'Escape', 'Takedown', 'Sweep', 'Pass', 'Imposition'].map(t => `<option value="${t}" ${m.type === t ? 'selected' : ''}>${t}</option>`).join('')}
-          </select>
-          <button class="delete-conn">&times;</button>
+    row.className = "connection-row";
+    const arrowIcon = isOutgoing ? "&rarr;" : "&larr;";
+
+    row.innerHTML = `
+      <div class="row-header">
+        <input type="text" class="conn-name" placeholder="Unnamed" value="${m.name || ''}">
+        <select class="conn-type">
+          ${['Transition', 'Finish', 'Escape', 'Takedown', 'Sweep', 'Pass', 'Imposition'].map(t => `<option value="${t}" ${m.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+        <button class="delete-conn" title="Delete connection">&times;</button>
+      </div>
+      <div class="row-io">
+        <div>
+          <label>FROM</label>
+          <input type="text" class="conn-from" value="${m.from.join(', ')}" placeholder="e.g. Mount">
         </div>
-        <div class="row-io">
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
-            <label style="font-size: 0.7rem; color: #aaa;">FROM</label>
-            <input type="text" class="conn-from" value="${m.from.join(', ')}" placeholder="e.g. Mount">
-          </div>
-          <span class="arrow" style="align-self: flex-end; padding-bottom: 8px;">&rarr;</span>
-          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
-            <label style="font-size: 0.7rem; color: #aaa;">TO</label>
-            <input type="text" class="conn-to" value="${m.to.join(', ')}" placeholder="e.g. Spiderweb">
-          </div>
+        <span class="arrow" title="Swap Direction">${arrowIcon}</span>
+        <div>
+          <label>TO</label>
+          <input type="text" class="conn-to" value="${m.to.join(', ')}" placeholder="e.g. Spiderweb">
         </div>
-      `;
-      // Delete row logic
-      row.querySelector(".delete-conn").addEventListener("click", () => {
-        row.remove();
-        this._syncConnectionsFromDOM();
-        this._renderConnections();
-      });
-    } else {
-      row.className = "connection-row read-only";
-      const displayName = m.name ? m.name : `unnamed ${m.type}`;
-      row.innerHTML = `
-        <div class="conn-header"><strong>${displayName}</strong></div>
-        <div class="conn-path">${m.from.join(", ")} &rarr; ${m.to.join(", ")}</div>
-      `;
-    }
+      </div>
+    `;
+
+    row.querySelector(".delete-conn").addEventListener("click", () => {
+      row.remove();
+      this._syncConnectionsFromDOM();
+      this._renderConnections();
+    });
+
+    // Make the arrow swap From/To and trigger a re-render
+    row.querySelector(".arrow").addEventListener("click", () => {
+      const fromInput = row.querySelector(".conn-from");
+      const toInput = row.querySelector(".conn-to");
+
+      // Swap the text values
+      const temp = fromInput.value;
+      fromInput.value = toInput.value;
+      toInput.value = temp;
+
+      // Sync to data, then re-render to move it to the correct section
+      this._syncConnectionsFromDOM();
+      this._renderConnections();
+    });
 
     return row;
   }
 
   _syncConnectionsFromDOM() {
-    if (!this.isEditing) return;
     const rows = this.sbConnections.querySelectorAll(".connection-row");
     const updated = [];
     rows.forEach(row => {
@@ -989,27 +1113,83 @@ class Graph {
     this.activeConnections = updated;
   }
 
-  _openSidebar(node) {
-    this.activeNode = node;
-    this._exitEditMode();
+  _handleSelectionChange() {
+    const selected = this.cy.nodes(":selected");
 
-    const sbName = document.getElementById("sb-name");
-    if (sbName) sbName.textContent = node.id();
-    this.sbTitle.value = node.id();
-    this.sbType.value = node.data("type") || "";
-    this.sbArea.value = (node.data("area") || []).join(", ");
-    this.sbNotes.value = node.data("notes") || "";
+    if (selected.length > 1) {
+      this._showMultiSelect(selected);
+    } else if (selected.length === 1) {
+      this._openSidebar(selected[0]);
+    } else {
+      this._openSidebar(null);
+    }
+  }
 
-    const connectedMoves = this.allMoves.filter(m => 
-      m.from.includes(node.id()) || m.to.includes(node.id())
-    );
-    this.activeConnections = connectedMoves.map(m => JSON.parse(JSON.stringify(m)));
+  _showMultiSelect(nodes) {
+    this.activeNode = null;
+    document.getElementById("sb-single-content").style.display = "none";
+    const multiView = document.getElementById("sb-multi-select");
+    multiView.style.display = "block";
 
-    this._renderConnections();
+    const list = document.getElementById("sb-multi-list");
+    list.innerHTML = "";
 
+    nodes.forEach(node => {
+      const li = document.createElement("li");
+      li.textContent = node.id();
+      li.addEventListener("click", () => {
+        this.cy.elements().unselect();
+        node.select();
+      });
+      list.appendChild(li);
+    });
+
+    document.getElementById("sb-name").textContent = "Multiple Selected";
     this.sidebar.classList.add("open");
     this.graphContainer.classList.add("sidebar-open");
-    
+    setTimeout(() => { this.cy.resize(); }, 310);
+  }
+
+  _openSidebar(node) {
+    this.activeNode = node;
+
+    // Show single-node form, hide multi-select
+    document.getElementById("sb-single-content").style.display = "block";
+    document.getElementById("sb-multi-select").style.display = "none";
+
+    const sbName = document.getElementById("sb-name");
+    if (sbName) sbName.textContent = node ? node.id() : "Create Node";
+
+    if (node) {
+      this.sbTitle.value = node.id();
+      this.sbType.value = node.data("type") || "Control";
+      this.sbStub.checked = !!node.data("stub");
+
+      const nodeArea = node.data("area") || [];
+      document.querySelectorAll(".sb-area-cb").forEach(cb => {
+        cb.checked = nodeArea.includes(cb.value);
+      });
+
+      this.sbNotes.value = node.data("notes") || "";
+      this.btnDelete.style.display = "block";
+      this.btnSave.textContent = "Save Node";
+
+      const connectedMoves = this.allMoves.filter(m => m.from.includes(node.id()) || m.to.includes(node.id()));
+      this.activeConnections = connectedMoves.map(m => JSON.parse(JSON.stringify(m)));
+    } else {
+      this.sbTitle.value = "";
+      this.sbType.value = "Control";
+      this.sbStub.checked = false;
+      document.querySelectorAll(".sb-area-cb").forEach(cb => cb.checked = false);
+      this.sbNotes.value = "";
+      this.btnDelete.style.display = "none";
+      this.btnSave.textContent = "Create Node";
+      this.activeConnections = [];
+    }
+
+    this._renderConnections();
+    this.sidebar.classList.add("open");
+    this.graphContainer.classList.add("sidebar-open");
     setTimeout(() => { this.cy.resize(); }, 310);
   }
 
@@ -1021,17 +1201,6 @@ class Graph {
     if (sbName) sbName.textContent = "Node Inspector";
     
     setTimeout(() => { this.cy.resize(); }, 310);
-  }
-
-  _exitEditMode() {
-    this.isEditing = false;
-    this.sbTitle.setAttribute("readonly", true);
-    this.sbType.setAttribute("readonly", true);
-    this.sbArea.setAttribute("readonly", true);
-    this.sbNotes.setAttribute("readonly", true);
-    this.btnEdit.style.display = "block";
-    this.btnSave.style.display = "none";
-    this.btnAddConn.style.display = "none";
   }
 
   async savePositions() {

@@ -43,12 +43,13 @@
     "Back Control": {
       "type": "Control",
       "x": -621.0775370496751,
-      "y": -14.742835408618731
+      "y": -14.742835408618731,
+      "notes": ""
     },
     "Body Triangle": {
       "type": "Predicament",
-      "x": -474.7856227026726,
-      "y": -81.50891794134031
+      "x": -638.4900625866835,
+      "y": -171.18141367398323
     },
     "S Mount": {
       "type": "Predicament",
@@ -57,13 +58,13 @@
     },
     "Giftwrap": {
       "type": "Predicament",
-      "x": -505.26362618831627,
-      "y": 258.34897398782687
+      "x": -334.1836307349139,
+      "y": 170.5319122395741
     },
     "Top Quarter Guard": {
       "type": "Control",
-      "x": 151.76366252861015,
-      "y": 319.23865297789587
+      "x": 197.89853401943364,
+      "y": 359.707838496162
     },
     "Top Kesa Getame": {
       "type": "Control",
@@ -110,8 +111,8 @@
     },
     "Back Taken": {
       "type": "Predicament",
-      "x": 217.5205025706576,
-      "y": 390.97552803489464
+      "x": 355.1157333327627,
+      "y": -54.18551266603356
     },
     "Butterfly Guard": {
       "type": "Guard",
@@ -152,13 +153,8 @@
     "Triangle": {
       "type": "Submission",
       "notes": "Finishing:\n- Standard guard triangle: lock, angle off, pull the head down\n- Adjust the lock so the crook of the knee is over the ankle\n- Squeeze and angle to finish\n\nEntry:\n- One arm and the head inside your legs (thrown up from guard)",
-      "x": 103.92197253911502,
-      "y": 21.41384874691623
-    },
-    "Rear Triangle": {
-      "type": "Submission",
-      "x": -829.1450499127575,
-      "y": 248.1066447631938
+      "x": -16.676200305318254,
+      "y": -46.57438292377099
     },
     "Top Kimura": {
       "type": "Submission",
@@ -191,8 +187,8 @@
     },
     "Mounted Americana": {
       "type": "Submission",
-      "x": -80.51024455358714,
-      "y": 21.297408281318667
+      "x": -242.02147836319995,
+      "y": 141.07755837034694
     },
     "Rear Naked Choke": {
       "type": "Submission",
@@ -202,7 +198,8 @@
     "Clock Choke": {
       "type": "Submission",
       "x": -551.2997784317565,
-      "y": -87.32115402608588
+      "y": -87.32115402608588,
+      "notes": ""
     },
     "Cross Collar Choke": {
       "type": "Submission",
@@ -234,11 +231,18 @@
       "x": 10.201421204518862,
       "y": 315.39052416530717
     },
-    "Bottom Kimur": {
+    "Bottom Kimura": {
       "type": "Submission",
       "x": -304.35338087487276,
       "y": -160.69592983917636,
       "notes": ""
+    },
+    "Turtle": {
+      "type": "Predicament",
+      "x": -451.4180924407134,
+      "y": -177.45756214309225,
+      "notes": "Auto-created stub",
+      "_stub": true
     }
   },
   "moves": [
@@ -266,15 +270,6 @@
         "Mounted Americana"
       ],
       "to": [
-        "Back Control"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Mounted Americana"
-      ],
-      "to": [
         "S Mount"
       ]
     },
@@ -290,78 +285,6 @@
     {
       "type": "Finish",
       "from": [
-        "Back Control"
-      ],
-      "to": [
-        "Rear Naked Choke"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Rear Naked Choke"
-      ],
-      "to": [
-        "Back Control"
-      ]
-    },
-    {
-      "type": "Finish",
-      "from": [
-        "Back Control"
-      ],
-      "to": [
-        "Clock Choke"
-      ]
-    },
-    {
-      "type": "Finish",
-      "from": [
-        "Body Triangle"
-      ],
-      "to": [
-        "Clock Choke"
-      ]
-    },
-    {
-      "type": "Finish",
-      "from": [
-        "Straightjacket"
-      ],
-      "to": [
-        "Clock Choke"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Clock Choke"
-      ],
-      "to": [
-        "Back Control"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Clock Choke"
-      ],
-      "to": [
-        "Body Triangle"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Clock Choke"
-      ],
-      "to": [
-        "Straightjacket"
-      ]
-    },
-    {
-      "type": "Finish",
-      "from": [
         "Mount"
       ],
       "to": [
@@ -375,15 +298,6 @@
       ],
       "to": [
         "Mount"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Chair Sit Ezekiel"
-      ],
-      "to": [
-        "Back Control"
       ]
     },
     {
@@ -551,28 +465,10 @@
     {
       "type": "Transition",
       "from": [
-        "Giftwrap"
-      ],
-      "to": [
-        "Rear Triangle"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
         "Bottom Kesa Getame"
       ],
       "to": [
         "Mount"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Bottom Half Guard"
-      ],
-      "to": [
-        "Back Control"
       ]
     },
     {
@@ -715,35 +611,6 @@
     {
       "type": "Transition",
       "from": [
-        "Bottom Moun"
-      ],
-      "to": [
-        "Top Full Guard"
-      ]
-    },
-    {
-      "name": "Shoot Triangle",
-      "type": "Finish",
-      "from": [
-        "Bottom Full Guard"
-      ],
-      "to": [
-        "Triangle"
-      ]
-    },
-    {
-      "name": "Roll-through to Standard Triangle",
-      "type": "Finish",
-      "from": [
-        "Mounted Triangle"
-      ],
-      "to": [
-        "Triangle"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
         "Bottom Kesa Getame"
       ],
       "to": [
@@ -873,7 +740,122 @@
         "Bottom Half Guard"
       ],
       "to": [
-        "Bottom Kimur"
+        "Bottom Kimura"
+      ]
+    },
+    {
+      "name": "Shoot Triangle",
+      "type": "Finish",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Triangle"
+      ]
+    },
+    {
+      "name": "Roll-through to Standard Triangle",
+      "type": "Finish",
+      "from": [
+        "Mounted Triangle"
+      ],
+      "to": [
+        "Triangle"
+      ]
+    },
+    {
+      "name": "Finish RNC",
+      "type": "Finish",
+      "from": [
+        "Back Control"
+      ],
+      "to": [
+        "Rear Naked Choke"
+      ]
+    },
+    {
+      "name": "Americana Trap",
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Rear Naked Choke"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Clock Choke"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Body Triangle"
+      ],
+      "to": [
+        "Clock Choke"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Straightjacket"
+      ],
+      "to": [
+        "Clock Choke"
+      ]
+    },
+    {
+      "name": "Finish Clock Choke",
+      "type": "Finish",
+      "from": [
+        "Back Control"
+      ],
+      "to": [
+        "Clock Choke"
+      ]
+    },
+    {
+      "name": "Wrestle Up",
+      "type": "Transition",
+      "from": [
+        "Turtle"
+      ],
+      "to": [
+        "Standing"
+      ]
+    },
+    {
+      "name": "Roll into Guard",
+      "type": "Transition",
+      "from": [
+        "Turtle"
+      ],
+      "to": [
+        "Bottom Full Guard"
       ]
     }
   ]
