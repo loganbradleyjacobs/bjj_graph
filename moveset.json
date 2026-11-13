@@ -59,7 +59,8 @@
     "Giftwrap": {
       "type": "Predicament",
       "x": -334.1836307349139,
-      "y": 170.5319122395741
+      "y": 170.5319122395741,
+      "notes": ""
     },
     "Top Quarter Guard": {
       "type": "Control",
@@ -107,7 +108,8 @@
     "Straightjacket": {
       "type": "Predicament",
       "x": -625.6268725730504,
-      "y": -101.43972078781508
+      "y": -101.43972078781508,
+      "notes": ""
     },
     "Back Taken": {
       "type": "Predicament",
@@ -241,8 +243,10 @@
       "type": "Predicament",
       "x": -451.4180924407134,
       "y": -177.45756214309225,
-      "notes": "Auto-created stub",
-      "_stub": true
+      "notes": "",
+      "area": [
+        "Ground"
+      ]
     }
   },
   "moves": [
@@ -271,15 +275,6 @@
       ],
       "to": [
         "S Mount"
-      ]
-    },
-    {
-      "type": "Escape",
-      "from": [
-        "Mounted Americana"
-      ],
-      "to": [
-        "Giftwrap"
       ]
     },
     {
@@ -451,15 +446,6 @@
       ],
       "to": [
         "Bottom Knee Shield"
-      ]
-    },
-    {
-      "type": "Transition",
-      "from": [
-        "Giftwrap"
-      ],
-      "to": [
-        "Body Triangle"
       ]
     },
     {
@@ -820,15 +806,6 @@
       ]
     },
     {
-      "type": "Finish",
-      "from": [
-        "Straightjacket"
-      ],
-      "to": [
-        "Clock Choke"
-      ]
-    },
-    {
       "name": "Finish Clock Choke",
       "type": "Finish",
       "from": [
@@ -856,6 +833,33 @@
       ],
       "to": [
         "Bottom Full Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Giftwrap"
+      ],
+      "to": [
+        "Body Triangle"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
+        "Giftwrap"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Straightjacket"
+      ],
+      "to": [
+        "Rear Naked Choke"
       ]
     }
   ]

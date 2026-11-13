@@ -958,7 +958,7 @@ class Graph {
             type,
             area,
             notes,
-            stub: this.sbStub.checked, // Add this line
+            stub: this.sbStub.checked,
             moves: finalMoves
           })
         });
@@ -968,20 +968,38 @@ class Graph {
         }
 
         this._closeSidebar();
-        
+
+        // 1. Capture positions of all currently rendered nodes BEFORE reloading
+        const currentPositions = {};
+        this.cy.nodes().forEach(n => {
+          currentPositions[n.id()] = { ...n.position() };
+        });
+
+        // 2. Fetch fresh data (includes new stubs / edges)
         const moveset = await this._fetchMovesetData();
-        this.allMoves = moveset.moves || []; // Sync allMoves with newly created nodes
+        this.allMoves = moveset.moves || [];
         const elements = GraphDataProcessor.processMovesetData(moveset);
-        
+
+        // 3. Rebuild the graph
         this.cy.elements().remove();
         this.cy.add(elements);
         this.cy.style().update();
 
+        // 4. Restore positions: Keep dragged positions for existing nodes, 
+        //    use backend x/y for newly auto-created nodes.
         this.cy.nodes().forEach(n => {
-          const x = n.data("x");
-          const y = n.data("y");
-          if (x != null && y != null) n.position({ x, y });
+          if (currentPositions[n.id()]) {
+            n.position(currentPositions[n.id()]);
+            n.data("x", currentPositions[n.id()].x);
+            n.data("y", currentPositions[n.id()].y);
+          } else {
+            const x = n.data("x");
+            const y = n.data("y");
+            if (x != null && y != null) n.position({ x, y });
+          }
         });
+
+        // 5. Fit viewport without animating
         this.layoutManager.runLayout("preset", { animate: false });
 
       } catch (e) {
