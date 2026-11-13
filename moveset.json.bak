@@ -1,0 +1,866 @@
+{
+  "positions": {
+    "Top Half Guard": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Guard",
+      "x": 189.94892305573015,
+      "y": -4.495999490369002
+    },
+    "Top Full Guard": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Guard",
+      "x": 493.96814602420034,
+      "y": 108.25302546698094
+    },
+    "Mount": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Control",
+      "x": -98.26115763056016,
+      "y": 123.8564019267888
+    },
+    "Standing": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Guard",
+      "x": 231.00731652187164,
+      "y": 263.6359943280538
+    },
+    "Bottom Full Guard": {
+      "area": [
+        "Ground"
+      ],
+      "type": "Guard",
+      "x": 149.80869436529707,
+      "y": -69.89992438450201
+    },
+    "Back Control": {
+      "type": "Control",
+      "x": -621.0775370496751,
+      "y": -14.742835408618731,
+      "notes": ""
+    },
+    "Body Triangle": {
+      "type": "Predicament",
+      "x": -638.4900625866835,
+      "y": -171.18141367398323
+    },
+    "S Mount": {
+      "type": "Predicament",
+      "x": -362.38783671611725,
+      "y": 421.186231420158
+    },
+    "Giftwrap": {
+      "type": "Predicament",
+      "x": -334.1836307349139,
+      "y": 170.5319122395741,
+      "notes": ""
+    },
+    "Top Quarter Guard": {
+      "type": "Control",
+      "x": 197.89853401943364,
+      "y": 359.707838496162
+    },
+    "Top Kesa Getame": {
+      "type": "Control",
+      "x": 194.73627539637283,
+      "y": 92.32836967768694
+    },
+    "Bottom Kesa Getame": {
+      "type": "Control",
+      "x": 269.2989943787748,
+      "y": 150.74328166116098
+    },
+    "Bottom Half Guard": {
+      "type": "Control",
+      "x": -215.59447996225327,
+      "y": -147.20939861907635
+    },
+    "Top Side Control": {
+      "type": "Control",
+      "x": -75.58509556291979,
+      "y": -229.66070193131642,
+      "notes": ""
+    },
+    "Bottom Side Control": {
+      "type": "Control",
+      "x": 147.31508420648683,
+      "y": -183.60156010292496,
+      "notes": "Elbow to knee connection"
+    },
+    "Bottom Mount": {
+      "type": "Control",
+      "x": -20.697698396331937,
+      "y": -40.07058160219941,
+      "notes": ""
+    },
+    "Stack Guard": {
+      "type": "Predicament",
+      "x": 1.693890957252762,
+      "y": 722.1662181720802
+    },
+    "Straightjacket": {
+      "type": "Predicament",
+      "x": -625.6268725730504,
+      "y": -101.43972078781508,
+      "notes": ""
+    },
+    "Back Taken": {
+      "type": "Predicament",
+      "x": 355.1157333327627,
+      "y": -54.18551266603356
+    },
+    "Butterfly Guard": {
+      "type": "Guard",
+      "x": 157.31747104384556,
+      "y": 249.89179171737806
+    },
+    "Triangle Defense": {
+      "type": "Predicament",
+      "x": 829.1450499127575,
+      "y": 146.29768804675712
+    },
+    "Armbar Defense": {
+      "type": "Predicament",
+      "x": 500.72240967000516,
+      "y": 469.2187839205347
+    },
+    "Mounted Triangle": {
+      "type": "Submission",
+      "notes": "Finishing:\n- Triangle lock with the ankle behind the knee, from Mount\n- Stay upright, head over their trapped shoulder\n- Do not get rolled forward - your weight is the advantage\n\nIf they defend or build posture:\n- Roll over the trapped shoulder into a standard Triangle\n- The lock stays; the position becomes a guard triangle",
+      "x": -45.3733938040192,
+      "y": 10.361876348816839
+    },
+    "Mounted Kimura": {
+      "type": "Submission",
+      "x": -162.5597003590409,
+      "y": 370.609483385992
+    },
+    "Mounted Straight Arm Lock": {
+      "type": "Submission",
+      "x": -64.46739437950126,
+      "y": 426.3191631927367
+    },
+    "Bottom Knee Shield": {
+      "type": "Guard",
+      "x": 0.9131225115392638,
+      "y": 198.24869079068782
+    },
+    "Triangle": {
+      "type": "Submission",
+      "notes": "Finishing:\n- Standard guard triangle: lock, angle off, pull the head down\n- Adjust the lock so the crook of the knee is over the ankle\n- Squeeze and angle to finish\n\nEntry:\n- One arm and the head inside your legs (thrown up from guard)",
+      "x": 319.3037204764415,
+      "y": -145.11967464912965
+    },
+    "Top Kimura": {
+      "type": "Submission",
+      "x": 406.4847593095116,
+      "y": -458.63968267331506
+    },
+    "Top North South": {
+      "type": "Control",
+      "x": 260.6471677362435,
+      "y": -653.0656130350462
+    },
+    "North South Choke": {
+      "type": "Submission",
+      "x": 271.7672956419008,
+      "y": -722.1662181720802
+    },
+    "Straight Arm Lock": {
+      "type": "Submission",
+      "x": 36.33901083969447,
+      "y": -510.3891889461506
+    },
+    "Armbar": {
+      "type": "Submission",
+      "area": [
+        "Ground"
+      ],
+      "notes": "Finishing:\n- Strip any grip on your leg before extending\n- Knees pinched, heel tight to their armpit\n- Bridge hips up, pull the wrist to your chest\n- Thumb up, elbow down, squeeze\n\nExpected defenses:\n- Hitchhiker roll if they commit to escaping\n- Stack if they are strong enough to compress\n- If either lands, reset to Spiderweb or transition",
+      "x": 73.61612504304482,
+      "y": 384.95227883275885
+    },
+    "Mounted Americana": {
+      "type": "Submission",
+      "x": -242.02147836319995,
+      "y": 141.07755837034694
+    },
+    "Rear Naked Choke": {
+      "type": "Submission",
+      "x": -701.5205995402464,
+      "y": -31.471360862411814
+    },
+    "Clock Choke": {
+      "type": "Submission",
+      "x": -551.2997784317565,
+      "y": -87.32115402608588,
+      "notes": ""
+    },
+    "Cross Collar Choke": {
+      "type": "Submission",
+      "x": -152.60340839437993,
+      "y": 213.94825766161387
+    },
+    "Arm Triangle": {
+      "type": "Submission",
+      "x": -96.21315243113662,
+      "y": 33.84634228450412,
+      "notes": ""
+    },
+    "Ezekiel": {
+      "type": "Submission",
+      "x": -208.00582665175136,
+      "y": 188.0521225506893
+    },
+    "Chair Sit Ezekiel": {
+      "type": "Submission",
+      "x": -48.06795988775751,
+      "y": 62.74046794455763
+    },
+    "Spiderweb": {
+      "type": "Predicament",
+      "area": [
+        "Ground"
+      ],
+      "notes": "Retention:\n- Leg heavy across the neck, foot on the hip\n- Stay on your side, not flat on your back\n- Knees pinched, their arm trapped between them\n- If they posture, follow with your hips, not your arms\n\nEscapes to expect:\n- Stack defense (they drive forward to compress you)\n- Hand-fight the wrist, extract the arm, recover\n- Hitchhiker roll once the arm starts extending (see Armbar)",
+      "x": 10.201421204518862,
+      "y": 315.39052416530717
+    },
+    "Bottom Kimura": {
+      "type": "Submission",
+      "x": -304.35338087487276,
+      "y": -160.69592983917636,
+      "notes": ""
+    },
+    "Turtle": {
+      "type": "Predicament",
+      "x": -451.4180924407134,
+      "y": -177.45756214309225,
+      "notes": "",
+      "area": [
+        "Ground"
+      ]
+    }
+  },
+  "moves": [
+    {
+      "type": "Finish",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mounted Americana"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
+        "S Mount"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Ezekiel"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Ezekiel"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Half Guard"
+      ],
+      "to": [
+        "Top Full Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Half Guard"
+      ],
+      "to": [
+        "Back Taken"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Half Guard"
+      ],
+      "to": [
+        "Top Quarter Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Full Guard"
+      ],
+      "to": [
+        "Top Quarter Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Full Guard"
+      ],
+      "to": [
+        "Triangle Defense"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Top Full Guard"
+      ],
+      "to": [
+        "Armbar Defense"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Top Kesa Getame"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Standing"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Top Half Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Top Quarter Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mounted Triangle"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mounted Kimura"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Mounted Straight Arm Lock"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Standing"
+      ],
+      "to": [
+        "Bottom Full Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Bottom Half Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Bottom Knee Shield"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Kesa Getame"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Top North South"
+      ],
+      "to": [
+        "North South Choke"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Cross Collar Choke"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Cross Collar Choke"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Butterfly Guard"
+      ],
+      "to": [
+        "Bottom Full Guard"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Arm Triangle"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Arm Triangle"
+      ],
+      "to": [
+        "Mount"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Arm Triangle"
+      ],
+      "to": [
+        "Chair Sit Ezekiel"
+      ]
+    },
+    {
+      "name": "Near-side Armbar Entry",
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Spiderweb"
+      ]
+    },
+    {
+      "name": "Far-side Armbar Entry",
+      "type": "Transition",
+      "from": [
+        "Mount"
+      ],
+      "to": [
+        "Spiderweb"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Spiderweb"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Spiderweb"
+      ],
+      "to": [
+        "Armbar"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Spiderweb"
+      ],
+      "to": [
+        "Stack Guard"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Spiderweb"
+      ],
+      "to": [
+        "Bottom Full Guard"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "S Mount"
+      ],
+      "to": [
+        "Spiderweb"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Bottom Mount"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Kesa Getame"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "name": "Hitchhiker Escape",
+      "type": "Escape",
+      "from": [
+        "Armbar"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Knee Shield"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Spiderweb"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Mount"
+      ],
+      "to": [
+        "Bottom Side Control"
+      ]
+    },
+    {
+      "name": "Opponent recomposed Half Guard",
+      "type": "Imposition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Top Half Guard"
+      ]
+    },
+    {
+      "name": "Opponent moved to North South",
+      "type": "Imposition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Top North South"
+      ]
+    },
+    {
+      "name": "Take Kimura grip",
+      "type": "Finish",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Top Kimura"
+      ]
+    },
+    {
+      "name": "Isolate Arm",
+      "type": "Transition",
+      "from": [
+        "Top Side Control"
+      ],
+      "to": [
+        "Straight Arm Lock"
+      ]
+    },
+    {
+      "name": "Double Leg Takedown",
+      "type": "Takedown",
+      "from": [
+        "Standing"
+      ],
+      "to": [
+        "Top Half Guard",
+        "Top Full Guard",
+        "Top Side Control"
+      ]
+    },
+    {
+      "name": "Opponent moved to Side Control",
+      "type": "Imposition",
+      "from": [
+        "Top Kesa Getame"
+      ],
+      "to": [
+        "Top Side Control"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Arm Triangle"
+      ],
+      "to": [
+        "Top Side Control"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Bottom Kimura"
+      ]
+    },
+    {
+      "name": "Shoot Triangle",
+      "type": "Finish",
+      "from": [
+        "Bottom Full Guard"
+      ],
+      "to": [
+        "Triangle"
+      ]
+    },
+    {
+      "name": "Roll-through to Standard Triangle",
+      "type": "Finish",
+      "from": [
+        "Mounted Triangle"
+      ],
+      "to": [
+        "Triangle"
+      ]
+    },
+    {
+      "name": "Finish RNC",
+      "type": "Finish",
+      "from": [
+        "Back Control"
+      ],
+      "to": [
+        "Rear Naked Choke"
+      ]
+    },
+    {
+      "name": "Americana Trap",
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Rear Naked Choke"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Bottom Half Guard"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Clock Choke"
+      ],
+      "to": [
+        "Back Control"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Body Triangle"
+      ],
+      "to": [
+        "Clock Choke"
+      ]
+    },
+    {
+      "name": "Finish Clock Choke",
+      "type": "Finish",
+      "from": [
+        "Back Control"
+      ],
+      "to": [
+        "Clock Choke"
+      ]
+    },
+    {
+      "name": "Wrestle Up",
+      "type": "Transition",
+      "from": [
+        "Turtle"
+      ],
+      "to": [
+        "Standing"
+      ]
+    },
+    {
+      "name": "Roll into Guard",
+      "type": "Transition",
+      "from": [
+        "Turtle"
+      ],
+      "to": [
+        "Bottom Full Guard"
+      ]
+    },
+    {
+      "type": "Finish",
+      "from": [
+        "Straightjacket"
+      ],
+      "to": [
+        "Rear Naked Choke"
+      ]
+    },
+    {
+      "type": "Transition",
+      "from": [
+        "Giftwrap"
+      ],
+      "to": [
+        "Body Triangle"
+      ]
+    },
+    {
+      "type": "Escape",
+      "from": [
+        "Mounted Americana"
+      ],
+      "to": [
+        "Giftwrap"
+      ]
+    }
+  ]
+}
