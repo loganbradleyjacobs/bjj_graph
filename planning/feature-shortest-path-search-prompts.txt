@@ -1,0 +1,1 @@
+/goal there should be a feature to see the shortest path between two nodes. you could search for them using the search sidebar. it should highlight and focus the full path. It should list the nodes and edges in order (make a small visual distinction between the two in the list) and they should be clickable, so that if you click on any of them, they will focus and highlight.

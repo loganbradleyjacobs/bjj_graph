@@ -1,214 +1,102 @@
-// Configuration module
 const CONFIG = {
   edgeColor: "#A9B7C6",
   nodeColors: {
-    "Guard": "#6897BB",       // Darcula blue
-    "Pass": "#CC7832",        // Darcula orange
-    "Predicament": "#FFC66D", // Darcula yellow
-    "Submission": "#F92672",  // Darcula pink/red
-    "Takedown": "#A9B7C6",    // Darcula grey
-    "Control": "#9876AA",     // Darcula purple
-    "Neutral": "#9876AA",
-    "Transition": "#808080",
-    "Unknown": "#ff5555",
+    "Guard": "#6897BB", "Pass": "#CC7832", "Predicament": "#FFC66D",
+    "Submission": "#F92672", "Takedown": "#A9B7C6", "Control": "#9876AA",
+    "Neutral": "#9876AA", "Transition": "#808080", "Unknown": "#ff5555",
     "default": "#A9B7C6"
   }
 };
 
-// Data processing module
 class GraphDataProcessor {
   static processMovesetData(data) {
     const elements = [];
     const positions = data.positions || {};
     const moves = data.moves || [];
 
-    // Nodes
     Object.keys(positions).forEach(name => {
       const pos = positions[name];
-      elements.push({
-        data: {
-          id: name,
-          label: name,
-          type: pos.type,
-          area: pos.area || [],
-          image: pos.image ||
-            `/static/images/${name.replace(/\s+/g, "_").toLowerCase()}.png`,
-          video: pos.video,
-          images: pos.images || [],
-          videos: pos.videos || [],
-          notes: pos.notes || "",
-          stub: !!pos._stub,
-          x: pos.x != null ? pos.x : null,
-          y: pos.y != null ? pos.y : null,
-        }
-      });
+      elements.push({ data: {
+        id: name, label: name, type: pos.type, area: pos.area || [],
+        image: pos.image || `/static/images/${name.replace(/\s+/g, "_").toLowerCase()}.png`,
+        video: pos.video, images: pos.images || [], videos: pos.videos || [],
+        notes: pos.notes || "", stub: !!pos._stub,
+        x: pos.x != null ? pos.x : null, y: pos.y != null ? pos.y : null,
+      }});
     });
 
-    // Edges: expand each move's from x to into pairwise edges.
-    // Dedupe on (pair, move name) so two different moves on the same
-    // pair render as parallel edges, but the same move isn't doubled.
     const edgeKeys = new Set();
-    moves.forEach((move, mi) => {
+    moves.forEach(move => {
       const froms = move.from || [];
       const tos = move.to || [];
-      froms.forEach((f, fi) => {
-        tos.forEach((t, ti) => {
-          if (!positions[f] || !positions[t]) return; // guard
+      froms.forEach(f => {
+        tos.forEach(t => {
+          if (!positions[f] || !positions[t]) return;
           const key = [f, t].sort().join("::") + "::" + (move.name || "");
           if (edgeKeys.has(key)) return;
           edgeKeys.add(key);
-          elements.push({
-            data: {
-              id: `e${mi}_${fi}_${ti}`,
-              source: f,
-              target: t,
-              label: move.name || "",
-              moveType: move.type || "Transition",
-              moveName: move.name || null,
-              notes: move.notes || "",
-              images: move.images || [],
-              videos: move.videos || [],
-            }
-          });
+          const safeId = "e_" + key.replace(/[^a-zA-Z0-9_:]/g, "_");
+          elements.push({ data: {
+            id: safeId, source: f, target: t, label: move.name || "",
+            moveType: move.type || "Transition", moveName: move.name || null,
+            notes: move.notes || "", images: move.images || [], videos: move.videos || [],
+          }});
         });
       });
     });
-
     return elements;
   }
 }
 
-// Style manager
 class GraphStyleManager {
-  constructor(cy) {
-    this.cy = cy;
-  }
+  constructor(cy) { this.cy = cy; }
 
   getBaseStyles() {
     return [
-      {
-        selector: "node",
-        style: this._getNodeStyles()
-      },
-      {
-        selector: "node.debug-hide-label",
-        style: {
-          label: ""
-        }
-      },
-      {
-        selector: "edge.hide-edge-label",
-        style: { label: "" }
-      },
-      {
-        selector: "node[?stub]",
-        style: {
-          "border-style": "dashed",
-          "border-color": "#ff5555",
-          "background-color": "#552222"
-        }
-      },
-      {
-        selector: "edge",
-        style: this._getEdgeStyles()
-      },
-      {
-        selector: 'edge[moveType = "Finish"]',
-        style: {
-          "line-color": "#d62728"
-        }
-      },
-      {
-        selector: 'edge[moveType = "Escape"]',
-        style: {
-          "line-style": "dashed",
-          opacity: 0.7
-        }
-      },
-      // Edge style variants (used by updateEdgeStyle class-based switching)
+      { selector: "node", style: this._getNodeStyles() },
+      { selector: "node.debug-hide-label", style: { label: "" } },
+      { selector: "edge.hide-edge-label", style: { label: "" } },
+      { selector: "node[?stub]", style: { "border-style": "dashed", "border-color": "#ff5555", "background-color": "#552222" } },
+      { selector: "edge", style: this._getEdgeStyles() },
+      { selector: 'edge[moveType = "Finish"]', style: { "line-color": "#d62728" } },
+      { selector: 'edge[moveType = "Escape"]', style: { "line-style": "dashed", opacity: 0.7 } },
       { selector: "edge.curve-straight", style: { "curve-style": "straight" } },
       { selector: "edge.curve-bezier", style: { "curve-style": "bezier" } },
       { selector: "edge.curve-unbundled-bezier", style: { "curve-style": "unbundled-bezier" } },
       { selector: "edge.curve-haystack", style: { "curve-style": "haystack" } },
       { selector: "edge.curve-segments", style: { "curve-style": "segments" } },
       { selector: "edge.curve-taxi", style: { "curve-style": "taxi" } },
-      // Overlap avoidance (must come after curve-* rules so it wins on specificity tie)
-      {
-        selector: "edge.avoid-overlap",
-        style: {
-          "curve-style": "unbundled-bezier",
-          "control-point-distances": 60,
-          "control-point-weights": 0.5,
-        }
-      },
-      {
-        selector: "edge.highlighted",
-        style: {
-          "line-color": "#ffffff",
-          "opacity": 1,
-          "z-index": 10
-        }
-      },
-      {
-        selector: "edge.faded",
-        style: {
-          "opacity": 0.1
-        }
-      },
-      {
-        selector: "node.faded",
-        style: {
-          "opacity": 0.15
-        }
-      }
+      { selector: "edge.avoid-overlap", style: { "curve-style": "unbundled-bezier", "control-point-distances": 60, "control-point-weights": 0.5 } },
+      { selector: "edge.highlighted", style: { "line-color": "#ffffff", "opacity": 1, "z-index": 10 } },
+      { selector: "edge.faded", style: { opacity: 0.1 } },
+      { selector: "node.faded", style: { opacity: 0.15 } },
     ];
   }
 
   _getNodeStyles() {
     return {
-      //text
-      label: (ele) => ele.data("label"),
+      label: ele => ele.data("label"),
       "font-family": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-      "font-size": (ele) => ele.width() * 0.2,
-      color: "#fff",
-      "text-valign": "center",
-      "text-halign": "center",
-      "text-wrap": "wrap",
-      "text-max-width": "50%",
-
-      //node
-      width: (ele) => this._calculateNodeWidth(ele),
-      height: (ele) => ele.width(),
-      "background-color": (ele) => CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
-      
-      // image
+      "font-size": ele => ele.width() * 0.2, color: "#fff",
+      "text-valign": "center", "text-halign": "center", "text-wrap": "wrap", "text-max-width": "50%",
+      width: ele => this._calculateNodeWidth(ele), height: ele => ele.width(),
+      "background-color": ele => CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
       "shape": "ellipse",
-      "background-image": (ele) => ele.data("image") || null,
-      "background-fit": "cover",
-      "background-clip": "node",
-      "background-width": "30%",
-      "background-height": "30%",   
-
-      //border
+      "background-image": ele => ele.data("image") || null,
+      "background-fit": "cover", "background-clip": "node",
+      "background-width": "30%", "background-height": "30%",
       "border-width": 4,
-      "border-color": (ele) => CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
+      "border-color": ele => CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
     };
   }
 
   _getEdgeStyles() {
     return {
-      width: 1,
-      "line-color": CONFIG.edgeColor,
-      "target-arrow-shape": "none",
-      "source-arrow-shape": "none",
-      "curve-style": "bezier",
-      label: (ele) => ele.data("label") || "",
-      "font-size": 8,
-      color: "#fff",
-      "text-rotation": "autorotate",
-      "text-background-opacity": 0.7,
-      "text-background-color": "#000",
-      "text-background-padding": 2,
+      width: 1, "line-color": CONFIG.edgeColor,
+      "target-arrow-shape": "none", "source-arrow-shape": "none", "curve-style": "bezier",
+      label: ele => ele.data("label") || "", "font-size": 8, color: "#fff",
+      "text-rotation": "autorotate", "text-background-opacity": 0.7,
+      "text-background-color": "#000", "text-background-padding": 2,
     };
   }
 
@@ -219,17 +107,12 @@ class GraphStyleManager {
 
   updateEdgeWidths() {
     const zoom = this.cy.zoom();
-    const screenWidth = 1;
-    this.cy.batch(() => {
-      this.cy.edges().forEach(edge => {
-        edge.style("width", screenWidth / zoom);
-      });
-    });
+    this.cy.batch(() => { this.cy.edges().forEach(e => e.style("width", 1 / zoom)); });
   }
 
   updateEdgeStyle(mode) {
-    const curveClasses = "curve-straight curve-bezier curve-unbundled-bezier curve-haystack curve-segments curve-taxi";
-    this.cy.edges().removeClass(curveClasses);
+    const classes = "curve-straight curve-bezier curve-unbundled-bezier curve-haystack curve-segments curve-taxi";
+    this.cy.edges().removeClass(classes);
     this.cy.edges().addClass(`curve-${mode}`);
     this.detectOverlappingEdges();
   }
@@ -237,47 +120,29 @@ class GraphStyleManager {
   updateLabelSizing() {
     const zoom = this.cy.zoom();
     this.cy.nodes().forEach(node => {
-      const width = node.width();
-      node.style({
-        "font-size": Math.max(4, Math.min(width * 0.2, 16 / zoom)),
-      });
+      node.style({ "font-size": Math.max(4, Math.min(node.width() * 0.2, 16 / zoom)) });
     });
   }
 
   detectOverlappingEdges() {
-    const ANGLE_THRESHOLD = 0.98; // cos(~11°)
-
+    const THRESH = 0.98;
     this.cy.batch(() => {
-      // Reset all previous overlap classifications
       this.cy.edges().removeClass("avoid-overlap");
-
       this.cy.nodes().forEach(node => {
-        const nodePos = node.position();
-        const connected = node.connectedEdges();
-        if (connected.length < 2) return;
-
-        // For each connected edge, compute vector from this node to the other endpoint
-        const vectors = connected.map(edge => {
+        const pos = node.position();
+        const edges = node.connectedEdges();
+        if (edges.length < 2) return;
+        const vecs = edges.map(edge => {
           const other = edge.source().id() === node.id() ? edge.target() : edge.source();
-          const otherPos = other.position();
-          const dx = otherPos.x - nodePos.x;
-          const dy = otherPos.y - nodePos.y;
+          const op = other.position();
+          const dx = op.x - pos.x, dy = op.y - pos.y;
           return { edge, dx, dy, len: Math.sqrt(dx * dx + dy * dy) || 1 };
         }).sort((a, b) => a.len - b.len);
-
-        // Check every pair
-        for (let i = 0; i < vectors.length; i++) {
-          for (let j = i + 1; j < vectors.length; j++) {
-            const v1 = vectors[i];
-            const v2 = vectors[j];
-            const u1x = v1.dx / v1.len, u1y = v1.dy / v1.len;
-            const u2x = v2.dx / v2.len, u2y = v2.dy / v2.len;
-            const dot = u1x * u2x + u1y * u2y;
-
-            // If nearly parallel and v2 is further (guaranteed by sort order), curve v2
-            if (dot > ANGLE_THRESHOLD) {
-              v2.edge.addClass("avoid-overlap");
-            }
+        for (let i = 0; i < vecs.length; i++) {
+          for (let j = i + 1; j < vecs.length; j++) {
+            const v1 = vecs[i], v2 = vecs[j];
+            const dot = (v1.dx / v1.len) * (v2.dx / v2.len) + (v1.dy / v1.len) * (v2.dy / v2.len);
+            if (dot > THRESH) v2.edge.addClass("avoid-overlap");
           }
         }
       });
@@ -285,61 +150,33 @@ class GraphStyleManager {
   }
 }
 
-// Layout manager
 class GraphLayoutManager {
   constructor(cy, styleManager) {
-    this.cy = cy;
-    this.styleManager = styleManager;
-    this._activeLayout = null;
-    this._layoutToken = 0;
+    this.cy = cy; this.styleManager = styleManager;
+    this._activeLayout = null; this._layoutToken = 0;
   }
 
   runLayout(mode, opts = {}) {
-    // Stop any layout that's still running.
     if (this._activeLayout && typeof this._activeLayout.stop === "function") {
-      try { this._activeLayout.stop(); } catch (e) { /* noop */ }
+      try { this._activeLayout.stop(); } catch (e) {}
     }
-    this._activeLayout = null;
-    this.cy.stop();
-    this._layoutToken += 1;
+    this._activeLayout = null; this.cy.stop(); this._layoutToken += 1;
 
-    if (mode === "preset") {
-      this._applyPresetLayout(opts);
-      return;
-    }
+    if (mode === "preset") return this._applyPresetLayout(opts);
+    if (mode === "concentric") return this._applyConcentricLayout();
+    if (mode === "fcose") return this._applyFcoseLayout();
 
-    if (mode === "concentric") {
-      this._applyConcentricLayout();
-      return;
-    }
-
-    if (mode === "fcose") {
-      this._applyFcoseLayout();
-      return;
-    }
-
-    this._applyConcentricLayout(); // seed positions first for dagre/cola
-
-    if (mode === "dagre") {
-      this._applyDagreLayout();
-    } else {
-      this._applyColaLayout();
-    }
+    this._applyConcentricLayout();
+    if (mode === "dagre") this._applyDagreLayout();
+    else this._applyColaLayout();
   }
 
   _applyPresetLayout(opts = {}) {
     const animate = opts.animate !== false;
     const startup = opts.startup === true;
-
     const nodes = this.cy.nodes();
-    const allHavePositions = nodes.length > 0 && nodes.every(n => {
-      return n.data("x") != null && n.data("y") != null;
-    });
-
-    if (!allHavePositions) {
-      this.cy.fit(undefined, 40);
-      return;
-    }
+    const allHavePositions = nodes.length > 0 && nodes.every(n => n.data("x") != null && n.data("y") != null);
+    if (!allHavePositions) { this.cy.fit(undefined, 40); return; }
 
     if (!animate) {
       nodes.forEach(n => n.position({ x: n.data("x"), y: n.data("y") }));
@@ -348,353 +185,212 @@ class GraphLayoutManager {
       return;
     }
 
-    // 1. Set starting positions
     if (startup) {
-      // Scatter nodes near origin so they are distinguishable
-      nodes.forEach(n => {
-        n.position({
-          x: (Math.random() - 0.5) * 260,
-          y: (Math.random() - 0.5) * 260,
-        });
-      });
+      nodes.forEach(n => n.position({ x: (Math.random() - 0.5) * 260, y: (Math.random() - 0.5) * 260 }));
       this.cy.fit(nodes, 40);
     }
 
-    // 2. Pre-calculate the target viewport from saved positions.
-    // We temporarily move nodes to their saved positions, calculate the
-    // bounding box, and restore them. This lets us animate the camera
-    // and the nodes concurrently, so nodes stay in view the whole time.
-    const currentPositions = nodes.map(n => ({ ...n.position() }));
+    const cur = nodes.map(n => ({ ...n.position() }));
     nodes.forEach(n => n.position({ x: n.data("x"), y: n.data("y") }));
-    const targetBB = nodes.boundingBox();
-    nodes.forEach((n, i) => n.position(currentPositions[i]));
+    const bb = nodes.boundingBox();
+    nodes.forEach((n, i) => n.position(cur[i]));
 
-    const duration = 800;
-    const easing = "ease-out";
+    const duration = 800, easing = "ease-out";
     const myToken = this._layoutToken;
 
-    // 3. Animate the viewport concurrently with node movement.
-    if (targetBB.w > 0 && targetBB.h > 0) {
-      const w = this.cy.width();
-      const h = this.cy.height();
-      const padding = 40;
-      const targetZoom = Math.min(
-        (w - 2 * padding) / targetBB.w,
-        (h - 2 * padding) / targetBB.h
-      );
-      const targetPan = {
-        x: w / 2 - targetZoom * (targetBB.x1 + targetBB.w / 2),
-        y: h / 2 - targetZoom * (targetBB.y1 + targetBB.h / 2),
-      };
+    if (bb.w > 0 && bb.h > 0) {
+      const w = this.cy.width(), h = this.cy.height(), pad = 40;
+      const tz = Math.min((w - 2 * pad) / bb.w, (h - 2 * pad) / bb.h);
       this.cy.animate({
-        zoom: targetZoom,
-        pan: targetPan,
-        duration,
-        easing,
+        zoom: tz,
+        pan: { x: w / 2 - tz * (bb.x1 + bb.w / 2), y: h / 2 - tz * (bb.y1 + bb.h / 2) },
+        duration, easing,
       });
     }
 
-    // 4. Animate nodes to saved positions.
-    nodes.forEach(n => {
-      n.animate(
-        { position: { x: n.data("x"), y: n.data("y") } },
-        { duration, easing }
-      );
-    });
-
-    // 5. Track layout for cancellation.
-    this._activeLayout = {
-      stop: () => {
-        this.cy.stop();
-        nodes.stop();
-      },
-    };
-
-    // Schedule overlap detection after the animation completes
-    if (this.styleManager) {
-      setTimeout(() => this.styleManager.detectOverlappingEdges(), duration + 150);
-    }
+    nodes.forEach(n => n.animate({ position: { x: n.data("x"), y: n.data("y") } }, { duration, easing }));
+    this._activeLayout = { stop: () => { this.cy.stop(); nodes.stop(); } };
+    if (this.styleManager) setTimeout(() => this.styleManager.detectOverlappingEdges(), duration + 150);
   }
 
   _applyConcentricLayout() {
-    const layout = this.cy.layout({
-      name: "concentric",
-      concentric: n => n.degree(),
-      levelWidth: () => 1,
-      padding: 50,
-    });
-    this._activeLayout = layout;
-    layout.run();
+    const layout = this.cy.layout({ name: "concentric", concentric: n => n.degree(), levelWidth: () => 1, padding: 50 });
+    this._activeLayout = layout; layout.run();
   }
 
   _applyDagreLayout() {
-    const layout = this.cy.layout({
-      name: "dagre",
-      rankDir: "TB",
-      rankSep: 50,
-      nodeSep: 30,
-      edgeSep: 10,
-      fit: true,
-      padding: 20,
-    });
-    this._activeLayout = layout;
-    layout.run();
+    const layout = this.cy.layout({ name: "dagre", rankDir: "TB", rankSep: 50, nodeSep: 30, edgeSep: 10, fit: true, padding: 20 });
+    this._activeLayout = layout; layout.run();
   }
 
   _applyFcoseLayout() {
     const IDEAL = { Finish: 20, Transition: 300, Escape: 500 };
     const ELAST = { Finish: 1.0, Transition: 0.2, Escape: 0.1 };
-
     const layout = this.cy.layout({
-      name: "fcose",
-      randomize: true,
-      animate: true,
-      animationDuration: 600,
+      name: "fcose", randomize: true, animate: true, animationDuration: 600,
       nodeRepulsion: 8000,
-      idealEdgeLength: edge => IDEAL[edge.data("moveType")] ?? 300,
-      edgeElasticity: edge => ELAST[edge.data("moveType")] ?? 0.2,
-      gravity: 0.15,
-      numIter: 2500,
-      fit: true,
-      padding: 40,
+      idealEdgeLength: e => IDEAL[e.data("moveType")] ?? 300,
+      edgeElasticity: e => ELAST[e.data("moveType")] ?? 0.2,
+      gravity: 0.15, numIter: 2500, fit: true, padding: 40,
     });
-    this._activeLayout = layout;
-    layout.run();
+    this._activeLayout = layout; layout.run();
   }
 
   _applyColaLayout() {
-    const SPRING = {
-      Finish: 10,
-      Transition: 30,
-      Escape: 100,
-    };
-
+    const SPRING = { Finish: 10, Transition: 30, Escape: 100 };
     const layout = this.cy.layout({
-      name: "cola",
-      animate: true,
-      randomize: false,
-      maxSimulationTime: 3000,
-      fit: true,
-      padding: 20,
-      nodeSpacing: () => 20,
-      avoidOverlap: true,
-      edgeLength: edge => SPRING[edge.data("moveType")] ?? 90,
+      name: "cola", animate: true, randomize: false, maxSimulationTime: 3000,
+      fit: true, padding: 20, nodeSpacing: () => 20, avoidOverlap: true,
+      edgeLength: e => SPRING[e.data("moveType")] ?? 90,
     });
-    this._activeLayout = layout;
-    layout.run();
+    this._activeLayout = layout; layout.run();
   }
 }
 
-// Tooltip manager
 class GraphTooltipManager {
   constructor(cy) {
-    this.cy = cy;
-    this.tooltip = this._createTooltip();
-    this._setupEventListeners();
+    this.cy = cy; this.tooltip = this._create(); this._listeners();
   }
-
-  _createTooltip() {
-    const tooltip = document.createElement("div");
-    tooltip.className = "tooltip";
-    tooltip.style.display = "none";
-    document.body.appendChild(tooltip);
-    return tooltip;
+  _create() {
+    const t = document.createElement("div");
+    t.className = "tooltip"; t.style.display = "none";
+    document.body.appendChild(t); return t;
   }
-
-  _setupEventListeners() {
-    this.cy.on("mouseover", "node", evt => this._showNodeTooltip(evt));
-    this.cy.on("mouseover", "edge", evt => this._showEdgeTooltip(evt));
-    this.cy.on("mousemove", evt => this._moveTooltip(evt));
-    this.cy.on("mouseout", "node, edge", () => this._hideTooltip());
-
-    // Fix tooltip ghosting when moving into the sidebar or leaving the canvas
-    document.getElementById("cy").addEventListener("mouseleave", () => this._hideTooltip());
-    document.getElementById("sidebar").addEventListener("mouseenter", () => this._hideTooltip());
+  _listeners() {
+    this.cy.on("mouseover", "node", e => this._showNode(e));
+    this.cy.on("mouseover", "edge", e => this._showEdge(e));
+    this.cy.on("mousemove", e => this._move(e));
+    this.cy.on("mouseout", "node, edge", () => this._hide());
+    document.getElementById("cy").addEventListener("mouseleave", () => this._hide());
+    document.getElementById("sidebar").addEventListener("mouseenter", () => this._hide());
   }
-
-  _showNodeTooltip(evt) {
-    const node = evt.target;
-    const escape = s => String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-
-    const incoming = node.incomers("edge").map(e => {
-      const kind = e.data("moveType") || "transition";
-      const nm = e.data("label") ? `: ${escape(e.data("label"))}` : "";
-      return `&nbsp;&nbsp;← ${escape(kind)}${nm} (from ${escape(e.source().id())})`;
+  _showNode(evt) {
+    const n = evt.target;
+    const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const inc = n.incomers("edge").map(e => {
+      const k = e.data("moveType") || "transition";
+      const nm = e.data("label") ? `: ${esc(e.data("label"))}` : "";
+      return `&nbsp;&nbsp;← ${esc(k)}${nm} (from ${esc(e.source().id())})`;
     });
-    const outgoing = node.outgoers("edge").map(e => {
-      const kind = e.data("moveType") || "transition";
-      const nm = e.data("label") ? `: ${escape(e.data("label"))}` : "";
-      return `&nbsp;&nbsp;→ ${escape(kind)}${nm} (to ${escape(e.target().id())})`;
+    const out = n.outgoers("edge").map(e => {
+      const k = e.data("moveType") || "transition";
+      const nm = e.data("label") ? `: ${esc(e.data("label"))}` : "";
+      return `&nbsp;&nbsp;→ ${esc(k)}${nm} (to ${esc(e.target().id())})`;
     });
-
-    const parts = [
-      `<strong>${escape(node.data("label"))}</strong>`,
-      `Type: ${escape(node.data("type") || "?")}`,
-      `Area: ${(node.data("area") || []).map(escape).join(", ") || "—"}`,
+    const p = [
+      `<strong>${esc(n.data("label"))}</strong>`,
+      `Type: ${esc(n.data("type") || "?")}`,
+      `Area: ${(n.data("area") || []).map(esc).join(", ") || "—"}`,
     ];
-
-    if (incoming.length) parts.push("Entries:<br>" + incoming.join("<br>"));
-    if (outgoing.length) parts.push("Exits:<br>" + outgoing.join("<br>"));
-
-    const notes = node.data("notes");
-    if (notes) parts.push(`<hr>${escape(notes).replace(/\n/g, "<br>")}`);
-
-    const images = node.data("images") || [];
-    if (images.length) {
-      parts.push("Images:<br>" + images.map(src =>
-        `<a href="${escape(src)}" target="_blank">${escape(src.split("/").pop())}</a>`
-      ).join("<br>"));
-    }
-
-    const videos = node.data("videos") || [];
-    if (videos.length) {
-      parts.push("Videos:<br>" + videos.map(url =>
-        `<a href="${escape(url)}" target="_blank">${escape(url)}</a>`
-      ).join("<br>"));
-    }
-
-    this.tooltip.innerHTML = parts.join("<br>");
+    if (inc.length) p.push("Entries:<br>" + inc.join("<br>"));
+    if (out.length) p.push("Exits:<br>" + out.join("<br>"));
+    const notes = n.data("notes");
+    if (notes) p.push(`<hr>${esc(notes).replace(/\n/g, "<br>")}`);
+    this.tooltip.innerHTML = p.join("<br>");
     this.tooltip.style.display = "block";
   }
-
-  _showEdgeTooltip(evt) {
+  _showEdge(evt) {
     const e = evt.target;
-    const escape = s => String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-
-    const parts = [
-      `<strong>${escape(e.data("label") || "(unnamed transition)")}</strong>`,
-      `Type: ${escape(e.data("moveType") || "Transition")}`,
-      `${escape(e.source().id())} ↔ ${escape(e.target().id())}`,
+    const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const p = [
+      `<strong>${esc(e.data("label") || "(unnamed transition)")}</strong>`,
+      `Type: ${esc(e.data("moveType") || "Transition")}`,
+      `${esc(e.source().id())} ↔ ${esc(e.target().id())}`,
     ];
-
     const notes = e.data("notes");
-    if (notes) parts.push(`<hr>${escape(notes).replace(/\n/g, "<br>")}`);
-
-    const images = e.data("images") || [];
-    if (images.length) {
-      parts.push("Images:<br>" + images.map(src =>
-        `<a href="${escape(src)}" target="_blank">${escape(src.split("/").pop())}</a>`
-      ).join("<br>"));
-    }
-
-    const videos = e.data("videos") || [];
-    if (videos.length) {
-      parts.push("Videos:<br>" + videos.map(url =>
-        `<a href="${escape(url)}" target="_blank">${escape(url)}</a>`
-      ).join("<br>"));
-    }
-
-    this.tooltip.innerHTML = parts.join("<br>");
+    if (notes) p.push(`<hr>${esc(notes).replace(/\n/g, "<br>")}`);
+    this.tooltip.innerHTML = p.join("<br>");
     this.tooltip.style.display = "block";
   }
-
-  _moveTooltip(evt) {
+  _move(evt) {
     this.tooltip.style.left = `${evt.originalEvent.pageX + 10}px`;
     this.tooltip.style.top = `${evt.originalEvent.pageY + 10}px`;
   }
-
-  _hideTooltip() {
-    this.tooltip.style.display = "none";
-  }
+  _hide() { this.tooltip.style.display = "none"; }
 }
 
-// Interaction manager
 class GraphInteractionManager {
   constructor(cy, layoutSelect, edgeStyleSelect, graphRef) {
-    this.cy = cy;
-    this.layoutSelect = layoutSelect;
-    this.edgeStyleSelect = edgeStyleSelect;
+    this.cy = cy; this.layoutSelect = layoutSelect; this.edgeStyleSelect = edgeStyleSelect;
     this.graphRef = graphRef;
     this.layoutManager = new GraphLayoutManager(cy);
     this.styleManager = new GraphStyleManager(cy);
-    this._setupEventListeners();
+    this._listeners();
   }
 
-  _setupEventListeners() {
-    this.layoutSelect.addEventListener("change", () => {
-      this.layoutManager.runLayout(this.layoutSelect.value);
-    });
+  _listeners() {
+    this.layoutSelect.addEventListener("change", () => this.layoutManager.runLayout(this.layoutSelect.value));
+    this.edgeStyleSelect.addEventListener("change", () => this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value));
+    this.cy.on("zoomend", () => { this.styleManager.updateEdgeWidths(); this.styleManager.updateLabelSizing(); });
 
-    this.edgeStyleSelect.addEventListener("change", () => {
-      this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value);
-    });
-
-    this.cy.on("zoomend", () => {
-      this.styleManager.updateEdgeWidths();
-      this.styleManager.updateLabelSizing();
-    });
-
-    this.cy.on("mouseover", "node", (evt) => {
-      const node = evt.target;
-      const connectedEdges = node.connectedEdges();
-      const connectedNodes = connectedEdges.connectedNodes();
-
-      // Highlight the connected edges
-      connectedEdges.addClass("highlighted");
-
-      // Fade out everything that isn't the node, its edges, or the adjacent nodes
-      const keepVisible = connectedEdges.union(connectedNodes).union(node);
-      this.cy.elements().not(keepVisible).addClass("faded");
-    });
-
-    this.cy.on("mouseout", "node", () => {
-      // Remove the classes when the mouse leaves the node
-      this.cy.elements().removeClass("highlighted").removeClass("faded");
-    });
-
-    // Remove the old tap handlers and use select/unselect to drive the sidebar
-    this.cy.on("select", "node", () => {
-      this.graphRef._handleSelectionChange();
-    });
-
-    this.cy.on("unselect", "node", () => {
-      this.graphRef._handleSelectionChange();
-    });
-
-    // Keep the tap handler for the camera zoom only
-    this.cy.on("tap", "node", (evt) => {
-      const node = evt.target;
-      const connectedEdges = node.connectedEdges();
-      const connectedNodes = connectedEdges.connectedNodes();
-      const subgraph = connectedEdges.union(connectedNodes).union(node);
-
-      this.cy.animate({
-        fit: { eles: subgraph, padding: 120 },
-        duration: 600,
-        easing: "ease-in-out"
+    const updateHighlights = () => {
+      this.cy.batch(() => {
+        this.cy.elements().removeClass("highlighted").removeClass("faded");
+        const selected = this.cy.nodes(":selected");
+        if (selected.length === 1) {
+          const node = selected[0];
+          const connectedEdges = node.connectedEdges();
+          const connectedNodes = connectedEdges.connectedNodes();
+          connectedEdges.addClass("highlighted");
+          const keepVisible = connectedEdges.union(connectedNodes).union(node);
+          this.cy.elements().not(keepVisible).addClass("faded");
+        }
       });
+    };
+
+    this.cy.on("select", "node", () => { this.graphRef._handleSelectionChange(); updateHighlights(); });
+    this.cy.on("unselect", "node", () => { this.graphRef._handleSelectionChange(); updateHighlights(); });
+
+    this.cy.on("tap", "node", evt => {
+      if (this.graphRef.currentTab === 'search') document.getElementById("tab-edit").click();
+      const node = evt.target;
+      const connectedEdges = node.connectedEdges();
+      const connectedNodes = connectedEdges.connectedNodes();
+      const sub = connectedEdges.union(connectedNodes).union(node);
+
+      // Compute fit target once, then animate zoom+pan explicitly
+      const bb = sub.boundingBox();
+      if (bb.w === 0 && bb.h === 0) return; // guard: single point / empty
+
+      const w = this.cy.width();
+      const h = this.cy.height();
+      const pad = 120;
+      const targetZoom = Math.min(
+        (w - 2 * pad) / Math.max(bb.w, 1),
+        (h - 2 * pad) / Math.max(bb.h, 1)
+      );
+      const targetPan = {
+        x: w / 2 - targetZoom * (bb.x1 + bb.w / 2),
+        y: h / 2 - targetZoom * (bb.y1 + bb.h / 2),
+      };
+
+      // Delay briefly so the sidebar's cy.resize() has settled (or use 0 if sidebar is already open)
+      const delay = this.graphRef.sidebar.classList.contains("open") ? 0 : 150;
+      setTimeout(() => {
+        this.cy.animate({ zoom: targetZoom, pan: targetPan, duration: 600, easing: "ease-in-out" });
+      }, delay);
     });
 
-    this.cy.on("tap", (evt) => {
+    this.cy.on("tap", evt => {
       if (evt.target === this.cy) {
+        const had = this.cy.nodes(":selected").length > 0;
         this.cy.elements().unselect();
+        if (!had) this.graphRef._openSidebar(null);
       }
     });
   }
 
-  enableInteractions() {
-    this.cy.userZoomingEnabled(true);
-    this.cy.userPanningEnabled(true);
-  }
+  enableInteractions() { this.cy.userZoomingEnabled(true); this.cy.userPanningEnabled(true); }
 }
 
-// Main Graph class
 class Graph {
   constructor(containerId, layoutSelectId, edgeStyleSelectId) {
     this.containerId = containerId;
     this.layoutSelect = document.getElementById(layoutSelectId);
     this.edgeStyleSelect = document.getElementById(edgeStyleSelectId);
-    this.cy = null;
-    this.layoutManager = null;
-    this.styleManager = null;
-    this.interactionManager = null;
-    this.tooltipManager = null;
+    this.currentTab = 'edit';
+    this.searchIndex = [];
+    this._isClosingSidebar = false;
   }
 
   async initialize() {
@@ -703,158 +399,99 @@ class Graph {
       this.allMoves = moveset.moves || [];
       const elements = GraphDataProcessor.processMovesetData(moveset);
 
-      // Initialize Cytoscape first
       this.cy = cytoscape({
         container: document.getElementById(this.containerId),
-        elements: elements,
-        style: [], // start empty
-        layout: { name: "preset" }
+        elements, style: [], layout: { name: "preset" }
       });
 
-      // Now style manager can reference cy
       this.styleManager = new GraphStyleManager(this.cy);
       this.cy.style().fromJson(this.styleManager.getBaseStyles()).update();
 
       this.layoutManager = new GraphLayoutManager(this.cy, this.styleManager);
-      this.interactionManager = new GraphInteractionManager(
-        this.cy,
-        this.layoutSelect,
-        this.edgeStyleSelect,
-        this
-      );
+      this.interactionManager = new GraphInteractionManager(this.cy, this.layoutSelect, this.edgeStyleSelect, this);
       this.tooltipManager = new GraphTooltipManager(this.cy);
 
-      // Apply initial layout and styles.
-      // If every node has saved x/y, use preset mode and apply positions.
-      // Otherwise run the selected layout as usual.
-      const allNodes = this.cy.nodes();
-      const allHavePositions = allNodes.length > 0 && allNodes.every(n => {
-        const x = n.data("x");
-        const y = n.data("y");
-        return x != null && y != null;
-      });
-
-      if (allHavePositions) {
-        this.layoutSelect.value = "preset";
-        this.layoutManager.runLayout("preset", { startup: true });
-      } else {
-        this.layoutManager.runLayout(this.layoutSelect.value);
-      }
+      const nodes = this.cy.nodes();
+      const allPos = nodes.length > 0 && nodes.every(n => n.data("x") != null && n.data("y") != null);
+      if (allPos) { this.layoutSelect.value = "preset"; this.layoutManager.runLayout("preset", { startup: true }); }
+      else this.layoutManager.runLayout(this.layoutSelect.value);
 
       this.styleManager.updateEdgeWidths();
       this.styleManager.updateLabelSizing();
       this.styleManager.updateEdgeStyle(this.edgeStyleSelect.value);
       this.interactionManager.enableInteractions();
 
-      // hook up show label checkbox
-      const showLabelCheckbox = document.getElementById("showLabelCheckbox");
-      showLabelCheckbox.addEventListener("change", () => {
-        const show = showLabelCheckbox.checked;
-        this.cy.nodes().forEach(n =>
-          show ? n.removeClass("debug-hide-label") : n.addClass("debug-hide-label"));
-        this.cy.edges().forEach(e =>
-          show ? e.removeClass("hide-edge-label") : e.addClass("hide-edge-label"));
+      document.getElementById("showLabelCheckbox").addEventListener("change", e => {
+        const show = e.target.checked;
+        this.cy.nodes().forEach(n => show ? n.removeClass("debug-hide-label") : n.addClass("debug-hide-label"));
+        this.cy.edges().forEach(ed => show ? ed.removeClass("hide-edge-label") : ed.addClass("hide-edge-label"));
       });
 
-      const nodeColorPicker = document.getElementById("nodeColorPicker");
-      nodeColorPicker.addEventListener("input", (e) => {
-        const color = e.target.value;
-        this.cy.nodes().style({
-          "background-color": color,
-          "border-color": color
-        });
+      document.getElementById("nodeColorPicker").addEventListener("input", e => {
+        this.cy.nodes().style({ "background-color": e.target.value, "border-color": e.target.value });
       });
-
       document.getElementById("resetNodeColors").addEventListener("click", () => {
         this.cy.nodes().style({
-          "background-color": (ele) =>
-            CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
-          "border-color": (ele) =>
-            CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default
+          "background-color": el => CONFIG.nodeColors[el.data("type")] || CONFIG.nodeColors.default,
+          "border-color": el => CONFIG.nodeColors[el.data("type")] || CONFIG.nodeColors.default,
         });
       });
-
-      const bgColorPicker = document.getElementById("bgColorPicker");
-      bgColorPicker.addEventListener("input", (e) => {
-        document.documentElement.style.setProperty(
-          "--page-bg",
-          e.target.value
-        );
+      document.getElementById("bgColorPicker").addEventListener("input", e => {
+        document.documentElement.style.setProperty("--page-bg", e.target.value);
       });
-
-      const edgeColorPicker = document.getElementById("edgeColorPicker");
-      edgeColorPicker.addEventListener("input", (e) => {
+      document.getElementById("edgeColorPicker").addEventListener("input", e => {
         CONFIG.edgeColor = e.target.value;
-        this.cy.edges().style({
-          "line-color": CONFIG.edgeColor,
-          "target-arrow-color": CONFIG.edgeColor
-        });
+        this.cy.edges().style({ "line-color": CONFIG.edgeColor });
       });
-
-
       document.getElementById("resetColors").addEventListener("click", () => {
         document.documentElement.style.setProperty("--page-bg", "#5050a0");
-
         this.cy.nodes().style({
-          "background-color": (ele) =>
-            CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default,
-          "border-color": (ele) =>
-            CONFIG.nodeColors[ele.data("type")] || CONFIG.nodeColors.default
+          "background-color": el => CONFIG.nodeColors[el.data("type")] || CONFIG.nodeColors.default,
+          "border-color": el => CONFIG.nodeColors[el.data("type")] || CONFIG.nodeColors.default,
         });
-
-        this.cy.edges().style({
-          "line-color": CONFIG.edgeColor,
-          "target-arrow-color": CONFIG.edgeColor
-        });
+        this.cy.edges().style({ "line-color": CONFIG.edgeColor });
       });
 
       this._wireUpSaveButton();
-
       document.getElementById("restoreBackup").addEventListener("click", async () => {
-        if (!confirm("Restore moveset.json from the last backup? This will overwrite all changes since the last save.")) return;
+        if (!confirm("Restore moveset.json from the last backup?")) return;
         try {
-          const resp = await fetch("/moveset/restore", { method: "POST" });
-          if (!resp.ok) throw new Error("Failed to restore");
+          const r = await fetch("/moveset/restore", { method: "POST" });
+          if (!r.ok) throw new Error("Failed");
           window.location.reload();
-        } catch (e) {
-          alert("Error restoring: " + e.message);
-        }
+        } catch (e) { alert("Error: " + e.message); }
       });
 
       this._setupSidebar();
+      this._buildSearchIndex();
+      this._setupSearch();
 
       this.cy.on("layoutstop", () => this.styleManager.detectOverlappingEdges());
       this.cy.on("dragfree", "node", () => this.styleManager.detectOverlappingEdges());
 
-    } catch (err) {
-      console.error("Failed to initialize graph:", err);
-    }
+      document.addEventListener("keydown", e => { if (e.key === "Escape") this._closeSidebar(); });
+    } catch (err) { console.error("Init failed:", err); }
   }
 
   async _fetchMovesetData() {
-    const response = await fetch("/moveset");
-    if (!response.ok) throw new Error(`Failed to fetch moveset: ${response.status}`);
-    return await response.json();
+    const r = await fetch("/moveset");
+    if (!r.ok) throw new Error(`Failed to fetch: ${r.status}`);
+    return await r.json();
   }
 
   _wireUpSaveButton() {
     const btn = document.getElementById("savePositions");
     const status = document.getElementById("saveStatus");
     if (!btn || !status) return;
-
     btn.addEventListener("click", async () => {
-      btn.disabled = true;
-      status.textContent = "Saving…";
+      btn.disabled = true; status.textContent = "Saving…";
       try {
         const result = await this.savePositions();
         status.textContent = `Saved ${result.saved} / ${result.total} nodes`;
         setTimeout(() => { status.textContent = ""; }, 3000);
       } catch (err) {
-        console.error(err);
-        status.textContent = `Save failed: ${err.message}`;
-      } finally {
-        btn.disabled = false;
-      }
+        console.error(err); status.textContent = `Save failed: ${err.message}`;
+      } finally { btn.disabled = false; }
     });
   }
 
@@ -864,144 +501,81 @@ class Graph {
     this.sbTitle = document.getElementById("sb-title");
     this.sbType = document.getElementById("sb-type");
     this.sbNotes = document.getElementById("sb-notes");
-    this.sbStub = document.getElementById("sb-stub");
     this.sbConnections = document.getElementById("sb-connections");
-    this.btnAddConn = document.getElementById("sb-add-conn");
     this.btnSave = document.getElementById("sb-save");
     this.btnDelete = document.getElementById("sb-delete");
     this.activeNode = null;
     this.activeConnections = [];
-    this.isCreating = false;
 
-    this.cy.on("dragfree", "node", (evt) => {
-      const node = evt.target;
-      node.data("x", node.position("x"));
-      node.data("y", node.position("y"));
+    this.cy.on("dragfree", "node", evt => {
+      const n = evt.target;
+      n.data("x", n.position("x")); n.data("y", n.position("y"));
     });
 
     document.getElementById("sb-close").addEventListener("click", () => this._closeSidebar());
 
-    this.btnAddConn.style.display = "block";
-    this.btnAddConn.addEventListener("click", () => {
-      this._syncConnectionsFromDOM();
-      // If creating a new node, use the title input as the 'from' node (or leave blank)
-      const fromNode = this.activeNode ? this.activeNode.id() : (this.sbTitle.value.trim() || "New Node");
-      this.activeConnections.push({ name: "", type: "Transition", from: [fromNode], to: [] });
-      this._renderConnections();
-    });
-
-    // --- Sidebar Resize Logic ---
-    const resizeHandle = document.getElementById("sb-resize-handle");
-    let isResizing = false;
-    let startX, startWidth;
-
-    resizeHandle.addEventListener("mousedown", (e) => {
-      isResizing = true;
-      startX = e.clientX;
-      startWidth = parseInt(document.defaultView.getComputedStyle(this.sidebar).width, 10);
-      this.sidebar.classList.add("resizing");
-      resizeHandle.classList.add("dragging");
+    // Resize handle
+    const rh = document.getElementById("sb-resize-handle");
+    let resizing = false, sx, sw;
+    rh.addEventListener("mousedown", e => {
+      resizing = true; sx = e.clientX;
+      sw = parseInt(document.defaultView.getComputedStyle(this.sidebar).width, 10);
+      this.sidebar.classList.add("resizing"); rh.classList.add("dragging");
       document.body.style.cursor = "col-resize";
     });
-
-    document.addEventListener("mousemove", (e) => {
-      if (!isResizing) return;
-
-      // Dragging left increases width
-      const dx = startX - e.clientX;
-      let newWidth = startWidth + dx;
-
-      // Clamp width between 320px and 800px
-      newWidth = Math.max(320, Math.min(800, newWidth));
-
-      document.documentElement.style.setProperty("--sidebar-width", `${newWidth}px`);
+    document.addEventListener("mousemove", e => {
+      if (!resizing) return;
+      let nw = Math.max(320, Math.min(800, sw + (sx - e.clientX)));
+      document.documentElement.style.setProperty("--sidebar-width", `${nw}px`);
     });
-
     document.addEventListener("mouseup", () => {
-      if (!isResizing) return;
-      isResizing = false;
-      this.sidebar.classList.remove("resizing");
-      resizeHandle.classList.remove("dragging");
-      document.body.style.cursor = "default";
-
-      // Trigger Cytoscape to resize canvas after CSS settles
+      if (!resizing) return;
+      resizing = false; this.sidebar.classList.remove("resizing");
+      rh.classList.remove("dragging"); document.body.style.cursor = "default";
       this.cy.resize();
     });
 
     this.btnSave.addEventListener("click", async () => {
       this._syncConnectionsFromDOM();
-
       const newTitle = this.sbTitle.value.trim();
       if (!newTitle) return alert("Title is required");
-
       const type = this.sbType.value;
       const area = Array.from(document.querySelectorAll(".sb-area-cb:checked")).map(cb => cb.value);
       const notes = this.sbNotes.value;
-
       const isNew = !this.activeNode;
       const nodeId = isNew ? newTitle : this.activeNode.id();
-
       const otherMoves = this.allMoves.filter(m => !m.from.includes(nodeId) && !m.to.includes(nodeId));
       const finalMoves = [...otherMoves, ...this.activeConnections];
 
       try {
-        this.btnSave.textContent = "Saving...";
-        this.btnSave.disabled = true;
+        this.btnSave.textContent = "Saving..."; this.btnSave.disabled = true;
         const url = isNew ? "/moveset/node" : `/moveset/node/${encodeURIComponent(nodeId)}`;
         const method = isNew ? "POST" : "PUT";
-
         const resp = await fetch(url, {
-          method: method,
-          headers: { "Content-Type": "application/json" },
+          method, headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: newTitle,
             type,
             area,
             notes,
-            stub: this.sbStub.checked,
+            stub: isNew ? true : !!(this.activeNode && this.activeNode.data("stub")),
             moves: finalMoves
           })
         });
-        if (!resp.ok) {
-          const err = await resp.json();
-          throw new Error(err.detail || "Failed to save");
-        }
+        if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || "Failed"); }
 
         this._closeSidebar();
 
-        // 1. Capture positions of all currently rendered nodes BEFORE reloading
-        const currentPositions = {};
-        this.cy.nodes().forEach(n => {
-          currentPositions[n.id()] = { ...n.position() };
-        });
-
-        // 2. Fetch fresh data (includes new stubs / edges)
+        const pan = { ...this.cy.pan() };
+        const zoom = this.cy.zoom();
         const moveset = await this._fetchMovesetData();
         this.allMoves = moveset.moves || [];
         const elements = GraphDataProcessor.processMovesetData(moveset);
-
-        // 3. Rebuild the graph
-        this.cy.elements().remove();
-        this.cy.add(elements);
+        this._syncGraph(elements);
         this.cy.style().update();
-
-        // 4. Restore positions: Keep dragged positions for existing nodes, 
-        //    use backend x/y for newly auto-created nodes.
-        this.cy.nodes().forEach(n => {
-          if (currentPositions[n.id()]) {
-            n.position(currentPositions[n.id()]);
-            n.data("x", currentPositions[n.id()].x);
-            n.data("y", currentPositions[n.id()].y);
-          } else {
-            const x = n.data("x");
-            const y = n.data("y");
-            if (x != null && y != null) n.position({ x, y });
-          }
-        });
-
-        // 5. Fit viewport without animating
-        this.layoutManager.runLayout("preset", { animate: false });
-
+        this.styleManager.detectOverlappingEdges();
+        this.cy.pan(pan);
+        this.cy.zoom(zoom);
       } catch (e) {
         alert("Error saving: " + e.message);
       } finally {
@@ -1013,59 +587,119 @@ class Graph {
     this.btnDelete.addEventListener("click", async () => {
       if (!this.activeNode) return;
       const nodeId = this.activeNode.id();
-      if (!confirm(`Delete node "${nodeId}" and all its connections?`)) return;
-
+      if (!confirm(`Delete node "${nodeId}"?`)) return;
       try {
-        this.btnDelete.textContent = "Deleting...";
-        this.btnDelete.disabled = true;
-        const resp = await fetch(`/moveset/node/${encodeURIComponent(nodeId)}`, { method: "DELETE" });
-        if (!resp.ok) throw new Error("Failed to delete");
+        this.btnDelete.textContent = "Deleting..."; this.btnDelete.disabled = true;
+        const r = await fetch(`/moveset/node/${encodeURIComponent(nodeId)}`, { method: "DELETE" });
+        if (!r.ok) throw new Error("Failed");
 
+        // Trim local allMoves the same way the backend does
+        this.allMoves = this.allMoves
+          .map(m => ({
+            ...m,
+            from: (m.from || []).filter(x => x !== nodeId),
+            to: (m.to || []).filter(x => x !== nodeId),
+          }))
+          .filter(m => m.from.length > 0 && m.to.length > 0);
+
+        // Suppress selection-change handler so the sidebar doesn't reopen to "Create Node"
+        this._isClosingSidebar = true;
+        this.cy.elements().unselect();
         this.cy.remove(this.activeNode.connectedEdges());
         this.cy.remove(this.activeNode);
+        this._buildSearchIndex();
         this._closeSidebar();
-      } catch (e) {
-        alert("Error deleting: " + e.message);
-      } finally {
-        this.btnDelete.textContent = "Delete Node";
-        this.btnDelete.disabled = false;
-      }
+      } catch (e) { alert("Error: " + e.message); }
+      finally { this.btnDelete.textContent = "Delete Node"; this.btnDelete.disabled = false; }
     });
+  }
+
+  _syncGraph(elements) {
+    const newNodes = {}, newEdges = {};
+    elements.forEach(e => { if (e.data.source) newEdges[e.data.id] = e; else newNodes[e.data.id] = e; });
+    this.cy.batch(() => {
+      this.cy.nodes().forEach(n => { if (!newNodes[n.id()]) n.remove(); });
+      this.cy.edges().forEach(e => { if (!newEdges[e.id()]) e.remove(); });
+      Object.values(newNodes).forEach(n => {
+        const existing = this.cy.getElementById(n.data.id);
+        if (existing.length > 0) {
+          existing.data(n.data);
+          if (n.data.x != null && n.data.y != null) existing.position({ x: n.data.x, y: n.data.y });
+        } else {
+          this.cy.add(n);
+          const added = this.cy.getElementById(n.data.id);
+          if (added.length > 0 && n.data.x != null && n.data.y != null) added.position({ x: n.data.x, y: n.data.y });
+        }
+      });
+      Object.values(newEdges).forEach(e => {
+        const existing = this.cy.getElementById(e.data.id);
+        if (existing.length > 0) existing.data(e.data);
+        else this.cy.add(e);
+      });
+    });
+    this._buildSearchIndex();
   }
 
   _renderConnections() {
     this.sbConnections.innerHTML = "";
-    if (!this.activeNode) return;
-    const nodeId = this.activeNode.id();
+    const currentId = this.activeNode ? this.activeNode.id() : this.sbTitle.value.trim();
+    const outgoing = this.activeConnections.filter(m => currentId && m.from.includes(currentId));
+    const incoming = this.activeConnections.filter(m => currentId && !m.from.includes(currentId) && m.to.includes(currentId));
 
-    const outgoing = this.activeConnections.filter(m => m.from.includes(nodeId));
-    const incoming = this.activeConnections.filter(m => !m.from.includes(nodeId) && m.to.includes(nodeId));
-
-    if (outgoing.length) {
+    const createGroup = (title, items, isOutgoing) => {
       const group = document.createElement("div");
       group.className = "conn-group";
-      group.innerHTML = `<h4>Outgoing</h4>`;
-      outgoing.forEach(m => group.appendChild(this._createConnRow(m, true)));
+      const header = document.createElement("h4");
+      header.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;color:var(--accent)";
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = title;
+      const addBtn = document.createElement("button");
+      addBtn.className = "btn small";
+      addBtn.style.cssText = "background:var(--accent);color:#fff";
+      addBtn.textContent = "+ Add";
+      addBtn.addEventListener("click", () => this._addConnection(isOutgoing ? 'outgoing' : 'incoming'));
+      header.appendChild(titleSpan); header.appendChild(addBtn);
+      group.appendChild(header);
+      items.forEach(m => group.appendChild(this._createConnRow(m, isOutgoing)));
       this.sbConnections.appendChild(group);
-    }
+    };
+    createGroup("Outgoing", outgoing, true);
+    createGroup("Incoming", incoming, false);
+  }
 
-    if (incoming.length) {
-      const group = document.createElement("div");
-      group.className = "conn-group";
-      group.innerHTML = `<h4>Incoming</h4>`;
-      incoming.forEach(m => group.appendChild(this._createConnRow(m, false)));
-      this.sbConnections.appendChild(group);
-    }
-
-    if (!outgoing.length && !incoming.length) {
-      this.sbConnections.innerHTML = "<div style='color:#888;'>No connections</div>";
-    }
+  _addConnection(direction) {
+    this._syncConnectionsFromDOM();
+    const fromNode = this.activeNode ? this.activeNode.id() : (this.sbTitle.value.trim() || "New Node");
+    const newConn = direction === 'outgoing'
+      ? { name: "", type: "Transition", from: [fromNode], to: [], _isNew: true }
+      : { name: "", type: "Transition", from: [], to: [fromNode], _isNew: true };
+    this.activeConnections.push(newConn);
+    this._renderConnections();
+    setTimeout(() => {
+      const row = this.sbConnections.querySelector(".flash-new");
+      if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
   }
 
   _createConnRow(m, isOutgoing) {
     const row = document.createElement("div");
     row.className = "connection-row";
+    if (m._isNew) { row.classList.add("flash-new"); delete m._isNew; }
     const arrowIcon = isOutgoing ? "&rarr;" : "&larr;";
+
+    const rowIO = isOutgoing ? `
+      <div class="row-io">
+        <div><label>FROM</label><input type="text" class="conn-from" value="${m.from.join(', ')}" placeholder="e.g. Mount"></div>
+        <span class="arrow" title="Swap Direction">${arrowIcon}</span>
+        <div><label>TO</label><input type="text" class="conn-to" value="${m.to.join(', ')}" placeholder="e.g. Mount"></div>
+      </div>
+    ` : `
+      <div class="row-io">
+        <div><label>TO</label><input type="text" class="conn-to" value="${m.to.join(', ')}" placeholder="e.g. Mount"></div>
+        <span class="arrow" title="Swap Direction">${arrowIcon}</span>
+        <div><label>FROM</label><input type="text" class="conn-from" value="${m.from.join(', ')}" placeholder="e.g. Mount"></div>
+      </div>
+    `;
 
     row.innerHTML = `
       <div class="row-header">
@@ -1073,42 +707,18 @@ class Graph {
         <select class="conn-type">
           ${['Transition', 'Finish', 'Escape', 'Takedown', 'Sweep', 'Pass', 'Imposition'].map(t => `<option value="${t}" ${m.type === t ? 'selected' : ''}>${t}</option>`).join('')}
         </select>
-        <button class="delete-conn" title="Delete connection">&times;</button>
+        <button class="delete-conn" title="Delete">&times;</button>
       </div>
-      <div class="row-io">
-        <div>
-          <label>FROM</label>
-          <input type="text" class="conn-from" value="${m.from.join(', ')}" placeholder="e.g. Mount">
-        </div>
-        <span class="arrow" title="Swap Direction">${arrowIcon}</span>
-        <div>
-          <label>TO</label>
-          <input type="text" class="conn-to" value="${m.to.join(', ')}" placeholder="e.g. Spiderweb">
-        </div>
-      </div>
+      ${rowIO}
     `;
-
     row.querySelector(".delete-conn").addEventListener("click", () => {
-      row.remove();
-      this._syncConnectionsFromDOM();
-      this._renderConnections();
+      row.remove(); this._syncConnectionsFromDOM(); this._renderConnections();
     });
-
-    // Make the arrow swap From/To and trigger a re-render
     row.querySelector(".arrow").addEventListener("click", () => {
-      const fromInput = row.querySelector(".conn-from");
-      const toInput = row.querySelector(".conn-to");
-
-      // Swap the text values
-      const temp = fromInput.value;
-      fromInput.value = toInput.value;
-      toInput.value = temp;
-
-      // Sync to data, then re-render to move it to the correct section
-      this._syncConnectionsFromDOM();
-      this._renderConnections();
+      const f = row.querySelector(".conn-from"), t = row.querySelector(".conn-to");
+      const temp = f.value; f.value = t.value; t.value = temp;
+      this._syncConnectionsFromDOM(); this._renderConnections();
     });
-
     return row;
   }
 
@@ -1118,86 +728,178 @@ class Graph {
     rows.forEach(row => {
       const name = row.querySelector(".conn-name").value.trim();
       const mtype = row.querySelector(".conn-type").value;
-      const fromStr = row.querySelector(".conn-from").value.trim();
-      const toStr = row.querySelector(".conn-to").value.trim();
-      
-      const from = fromStr ? fromStr.split(",").map(s => s.trim()).filter(Boolean) : [];
-      const to = toStr ? toStr.split(",").map(s => s.trim()).filter(Boolean) : [];
-      
-      if (from.length || to.length) {
-        updated.push({ name: name || undefined, type: mtype, from, to });
-      }
+      const fs = row.querySelector(".conn-from").value.trim();
+      const ts = row.querySelector(".conn-to").value.trim();
+      const from = fs ? fs.split(",").map(s => s.trim()).filter(Boolean) : [];
+      const to = ts ? ts.split(",").map(s => s.trim()).filter(Boolean) : [];
+      if (from.length || to.length) updated.push({ name: name || undefined, type: mtype, from, to });
     });
     this.activeConnections = updated;
   }
 
   _handleSelectionChange() {
-    const selected = this.cy.nodes(":selected");
-
-    if (selected.length > 1) {
-      this._showMultiSelect(selected);
-    } else if (selected.length === 1) {
-      this._openSidebar(selected[0]);
-    } else {
-      this._openSidebar(null);
+    if (this._isClosingSidebar) return;
+    if (this.currentTab === 'search') {
+      this.currentTab = 'edit';
+      document.getElementById("tab-edit").classList.add("active");
+      document.getElementById("tab-search").classList.remove("active");
+      this.sidebar.classList.remove("search-mode");
+      document.getElementById("sb-search-content").style.display = "none";
     }
+    const sel = this.cy.nodes(":selected");
+    if (sel.length > 1) this._showMultiSelect(sel);
+    else if (sel.length === 1) this._openSidebar(sel[0]);
+    else this._openSidebar(null);
   }
 
   _showMultiSelect(nodes) {
     this.activeNode = null;
     document.getElementById("sb-single-content").style.display = "none";
-    const multiView = document.getElementById("sb-multi-select");
-    multiView.style.display = "block";
-
+    document.getElementById("sb-search-content").style.display = "none";
+    document.getElementById("sb-multi-select").style.display = "block";
     const list = document.getElementById("sb-multi-list");
     list.innerHTML = "";
-
-    nodes.forEach(node => {
+    nodes.forEach(n => {
       const li = document.createElement("li");
-      li.textContent = node.id();
-      li.addEventListener("click", () => {
-        this.cy.elements().unselect();
-        node.select();
-      });
+      li.textContent = n.id();
+      li.addEventListener("click", () => { this.cy.elements().unselect(); n.select(); });
       list.appendChild(li);
     });
-
     document.getElementById("sb-name").textContent = "Multiple Selected";
     this.sidebar.classList.add("open");
     this.graphContainer.classList.add("sidebar-open");
-    setTimeout(() => { this.cy.resize(); }, 310);
+    requestAnimationFrame(() => this.cy.resize());
+  }
+
+  _buildSearchIndex() {
+    this.searchIndex = [];
+    const seen = new Set();
+    this.cy.nodes().forEach(n => {
+      const k = `node::${n.id()}`;
+      if (!seen.has(k)) { this.searchIndex.push({ id: n.id(), text: n.id(), context: "Node" }); seen.add(k); }
+    });
+    this.cy.edges().forEach(e => {
+      const label = e.data("label");
+      if (label) {
+        const k = `edge::${label}`;
+        if (!seen.has(k)) { this.searchIndex.push({ id: e.id(), text: label, context: "Edge" }); seen.add(k); }
+      }
+    });
+  }
+
+  _setupSearch() {
+    this.searchInput = document.getElementById("sb-search-input");
+    this.searchResults = document.getElementById("sb-search-results");
+
+    const switchTab = tab => {
+      this.currentTab = tab;
+      document.getElementById("tab-edit").classList.toggle("active", tab === 'edit');
+      document.getElementById("tab-search").classList.toggle("active", tab === 'search');
+      this.sidebar.classList.toggle("search-mode", tab === 'search');
+      if (tab === 'search') {
+        document.getElementById("sb-single-content").style.display = "none";
+        document.getElementById("sb-multi-select").style.display = "none";
+        document.getElementById("sb-search-content").style.display = "block";
+        this.searchInput.focus();
+      } else {
+        document.getElementById("sb-search-content").style.display = "none";
+        this._handleSelectionChange();
+      }
+    };
+    document.getElementById("tab-edit").addEventListener("click", () => switchTab('edit'));
+    document.getElementById("tab-search").addEventListener("click", () => switchTab('search'));
+
+    this.searchInput.addEventListener("input", e => {
+      const q = e.target.value.trim().toLowerCase();
+      this.searchResults.innerHTML = "";
+      if (!q) return;
+      const results = this.searchIndex
+        .filter(i => i.text.toLowerCase().includes(q))
+        .sort((a, b) => {
+          const at = a.text.toLowerCase(), bt = b.text.toLowerCase();
+          if (at === q) return -1; if (bt === q) return 1;
+          if (at.startsWith(q) && !bt.startsWith(q)) return -1;
+          if (bt.startsWith(q) && !at.startsWith(q)) return 1;
+          return 0;
+        }).slice(0, 4);
+      if (!results.length) { this.searchResults.innerHTML = "<li>No results</li>"; return; }
+      results.forEach(r => {
+        const li = document.createElement("li");
+        li.innerHTML = `<span>${r.text}</span><span class="context-tag">${r.context}</span>`;
+        li.addEventListener("click", () => this._handleSearchSelect(r.id));
+        this.searchResults.appendChild(li);
+      });
+    });
+
+    this.searchInput.addEventListener("keydown", e => {
+      const items = this.searchResults.querySelectorAll("li");
+      if (!items.length) return;
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const cur = Array.from(items).findIndex(li => li.classList.contains("active"));
+        let next = (cur + (e.shiftKey ? -1 : 1)) % items.length;
+        if (cur === -1 && e.shiftKey) next = items.length - 1;
+        items.forEach(li => li.classList.remove("active"));
+        items[next].classList.add("active");
+        items[next].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const active = this.searchResults.querySelector("li.active") || items[0];
+        if (active) active.click();
+      }
+    });
+  }
+
+  _handleSearchSelect(id) {
+    const ele = this.cy.getElementById(id);
+    if (!ele || ele.length === 0) return;
+    this.searchInput.value = ""; this.searchResults.innerHTML = "";
+    this.cy.elements().unselect();
+    let target;
+    if (ele.isNode()) { target = ele.union(ele.connectedEdges()).union(ele.neighborhood()); ele.select(); }
+    else if (ele.isEdge()) { target = ele.union(ele.source()).union(ele.target()); ele.source().select(); }
+    this.cy.animate({ fit: { eles: target, padding: 120 }, duration: 600, easing: "ease-in-out" });
+    if (!this.sidebar.classList.contains("open")) {
+      this.sidebar.classList.add("open"); this.graphContainer.classList.add("sidebar-open");
+      requestAnimationFrame(() => this.cy.resize());
+    }
+    document.getElementById("tab-edit").click();
   }
 
   _openSidebar(node) {
+    const wasOpen = this.sidebar.classList.contains("open");
     this.activeNode = node;
 
-    // Show single-node form, hide multi-select
+    this.currentTab = 'edit';
+    document.getElementById("tab-edit").classList.add("active");
+    document.getElementById("tab-search").classList.remove("active");
+    this.sidebar.classList.remove("search-mode");
+    document.getElementById("sb-search-content").style.display = "none";
+    if (this.searchInput) this.searchInput.value = "";
+    if (this.searchResults) this.searchResults.innerHTML = "";
+
     document.getElementById("sb-single-content").style.display = "block";
     document.getElementById("sb-multi-select").style.display = "none";
 
     const sbName = document.getElementById("sb-name");
     if (sbName) sbName.textContent = node ? node.id() : "Create Node";
 
+    const tabEdit = document.getElementById("tab-edit");
+    tabEdit.textContent = node ? "Inspector" : "New Node";
+
     if (node) {
       this.sbTitle.value = node.id();
       this.sbType.value = node.data("type") || "Control";
-      this.sbStub.checked = !!node.data("stub");
-
-      const nodeArea = node.data("area") || [];
-      document.querySelectorAll(".sb-area-cb").forEach(cb => {
-        cb.checked = nodeArea.includes(cb.value);
-      });
-
+      const area = node.data("area") || [];
+      document.querySelectorAll(".sb-area-cb").forEach(cb => cb.checked = area.includes(cb.value));
       this.sbNotes.value = node.data("notes") || "";
       this.btnDelete.style.display = "block";
       this.btnSave.textContent = "Save Node";
-
-      const connectedMoves = this.allMoves.filter(m => m.from.includes(node.id()) || m.to.includes(node.id()));
-      this.activeConnections = connectedMoves.map(m => JSON.parse(JSON.stringify(m)));
+      this.activeConnections = this.allMoves.filter(m => m.from.includes(node.id()) || m.to.includes(node.id()))
+        .map(m => JSON.parse(JSON.stringify(m)));
     } else {
       this.sbTitle.value = "";
       this.sbType.value = "Control";
-      this.sbStub.checked = false;
       document.querySelectorAll(".sb-area-cb").forEach(cb => cb.checked = false);
       this.sbNotes.value = "";
       this.btnDelete.style.display = "none";
@@ -1208,50 +910,37 @@ class Graph {
     this._renderConnections();
     this.sidebar.classList.add("open");
     this.graphContainer.classList.add("sidebar-open");
-    setTimeout(() => { this.cy.resize(); }, 310);
+    if (!wasOpen) requestAnimationFrame(() => this.cy.resize());
   }
 
   _closeSidebar() {
+    const wasOpen = this.sidebar.classList.contains("open");
+    this._isClosingSidebar = true;
     this.sidebar.classList.remove("open");
     this.graphContainer.classList.remove("sidebar-open");
     this.activeNode = null;
     const sbName = document.getElementById("sb-name");
     if (sbName) sbName.textContent = "Node Inspector";
-    
-    setTimeout(() => { this.cy.resize(); }, 310);
+    this.cy.elements().unselect();
+    if (wasOpen) requestAnimationFrame(() => this.cy.resize());
+    setTimeout(() => { this._isClosingSidebar = false; }, 150);
   }
 
   async savePositions() {
     const positions = {};
-    this.cy.nodes().forEach(n => {
-      const p = n.position();
-      positions[n.id()] = { x: p.x, y: p.y };
-    });
-
-    const resp = await fetch("/moveset/positions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    this.cy.nodes().forEach(n => { const p = n.position(); positions[n.id()] = { x: p.x, y: p.y }; });
+    const r = await fetch("/moveset/positions", {
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ positions }),
     });
-
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(`${resp.status} — ${text.slice(0, 200)}`);
-    }
-
-    // Keep in-memory data in sync with disk so that switching back to
-    // preset restores the just-saved layout, not the previous one.
-    this.cy.nodes().forEach(n => {
-      n.data("x", n.position("x"));
-      n.data("y", n.position("y"));
-    });
-
-    return await resp.json();
+    if (!r.ok) { const text = await r.text(); throw new Error(`${r.status} — ${text.slice(0, 200)}`); }
+    this.cy.nodes().forEach(n => { n.data("x", n.position("x")); n.data("y", n.position("y")); });
+    return await r.json();
   }
 }
 
-// Initialize graph
 async function loadGraph() {
   const graph = new Graph("cy", "layoutMode", "edgeStyleMode");
   await graph.initialize();
-} loadGraph();
+}
+loadGraph();

@@ -1,0 +1,1 @@
+/goal I would like edges to have notes of their own. This means they should show in a menu on the sidebar, and you should be able to edit their properties in much the same way. This means I would like to be able to select them, so you should be able to click on an edge and have it focus on it, and also the 2 connecting nodes.

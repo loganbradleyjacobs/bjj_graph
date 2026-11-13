@@ -69,7 +69,10 @@
       <div id="sb-resize-handle" class="resize-handle"></div>
       
       <div class="sidebar-header">
-        <h2 id="sb-name">Node Inspector</h2>
+        <div class="sb-tabs">
+          <button id="tab-edit" class="active">Inspector</button>
+          <button id="tab-search">Search</button>
+        </div>
         <button id="sb-close" class="icon-btn">&times;</button>
       </div>
       
@@ -103,29 +106,25 @@
             <label><input type="checkbox" value="Clinch" class="sb-area-cb"> Clinch</label>
           </div>
         </div>
-        <div class="form-group">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none;">
-            <input type="checkbox" id="sb-stub" style="width: auto; margin: 0;">
-            Temporary Stub (Dashed)
-          </label>
-        </div>
 
         <div class="form-group">
           <label>Notes</label>
           <textarea id="sb-notes" rows="6"></textarea>
         </div>
-        
         <div class="form-group">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <label style="margin-bottom: 0;">Connections</label>
-            <button id="sb-add-conn" class="btn small" style="padding: 4px 10px; font-size: 0.8rem; background: var(--accent); color: #fff;">+ Add Edge</button>
-          </div>
+          <label>Connections</label>
           <div id="sb-connections" class="connections-container"></div>
         </div>
       </div>
+
+      <div id="sb-search-content" class="sidebar-content" style="display: none;">
+        <div class="form-group" style="margin-bottom: 10px;">
+          <input type="text" id="sb-search-input" placeholder="Search nodes or edges..." autocomplete="off">
+        </div>
+        <ul id="sb-search-results" class="multi-list"></ul>
+      </div>
       
       <div class="sidebar-footer">
-        <button id="sb-edit" class="btn" style="display:none;">Edit</button>
         <button id="sb-save" class="btn primary">Save Node</button>
         <button id="sb-delete" class="btn danger">Delete Node</button>
       </div>

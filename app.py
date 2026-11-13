@@ -236,12 +236,16 @@ def delete_node(node_id: str):
         
     del nodes[node_id]
     
-    # Cleanup moves so we don't leave dangling edges
-    moves = data.get("moves") or []
-    data["moves"] = [
-        m for m in moves 
-        if node_id not in m.get("from", []) and node_id not in m.get("to", [])
-    ]
+    # Trim moves that reference the deleted node, keeping valid connections
+    trimmed_moves = []
+    for m in (data.get("moves") or []):
+        new_from = [x for x in m.get("from", []) if x != node_id]
+        new_to = [x for x in m.get("to", []) if x != node_id]
+        if new_from and new_to:
+            m["from"] = new_from
+            m["to"] = new_to
+            trimmed_moves.append(m)
+    data["moves"] = trimmed_moves
     
     backup_path = moveset_path.with_suffix(".json.bak")
     backup_path.write_text(moveset_path.read_text(encoding="utf-8"), encoding="utf-8")

@@ -1,0 +1,11 @@
+- add keyboard shortcuts
+/goal I would like to add keyboard shortcut support to this app.
+
+Cmd + S to save positions, 
+Cmd + N to create nodes (if focused on the graph)
+Cmd + G to switch focus to graph
+Cmd + F to switch focus to search
+Cmd + E to open or close (toggle) the sidebar.
+Esc to go back
+
+/spike I want to be able to navigate the graph sidebar. Research typical keybinds for this sort of movement
