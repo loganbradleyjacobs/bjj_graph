@@ -1,6 +1,0 @@
-- search and discovery
-/goal I want to have a search bar. there should be a tab you can click to go from edit mode to search mode. when you search for a node or edge, it should give suggestions of the nodes in the list underneath, based on keywords. maybe show the top 4 closest words in order of closeness. allow scrolling that list. when you hit enter or click on a node in the list, it should be as if you are selecting that node with the mouse, so the animation should go over to it, it should highlight the adjacent nodes and edges, and the sidebar to edit/read should popup.
-
-- pictures visible
-
-/goal I would like a viewport for the node picture in both the inspector and search (best fit word, updated every letter) above title and above search bar respectively.

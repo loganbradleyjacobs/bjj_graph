@@ -1,0 +1,3 @@
+- pictures visible
+
+/goal I would like a viewport for the node picture in both the inspector and search (best fit word, updated every letter) above title and above search bar respectively.
