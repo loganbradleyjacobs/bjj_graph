@@ -19,6 +19,3 @@
 - make update look and qol 
 
 /goal change tooltip edge information layout such that the such connect shows the connection type first after the arrow . make unnamed capital U Unnamed in the sidebar. allow functionality for dragging new edges or deleting them. merge read and edit mode on the sidebar (sleek appearance of read, functionality of edit) adjust color scheme to be like darcula everywhere including sidebar, graph, tooltip and debug sidebar. it is not very ergonomical when you click a node, can you make the transition smoother? maybe center the node a bit more.
-
-- search and discovery
-/goal I want to have a search bar. there should be a tab you can click to go from edit mode to search mode. when you search for a node or edge, it should give suggestions of the nodes in the list underneath, based on keywords. maybe show the top 4 closest words in order of closeness. allow scrolling that list. when you hit enter or click on a node in the list, it should be as if you are selecting that node with the mouse, so the animation should go over to it, it should highlight the adjacent nodes and edges, and the sidebar to edit/read should popup.
