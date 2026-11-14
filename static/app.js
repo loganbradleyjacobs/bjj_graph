@@ -431,6 +431,15 @@ class Graph {
       this.interactionManager = new GraphInteractionManager(this.cy, this.layoutSelect, this.edgeStyleSelect, this);
       this.tooltipManager = new GraphTooltipManager(this.cy);
 
+      // Keep the Cytoscape canvas in lockstep with the container during
+      // sidebar open/close (and any other width change). A one-shot
+      // requestAnimationFrame(() => cy.resize()) misses the CSS transition,
+      // causing a ~100ms mismatch between canvas size and container width.
+      this._resizeObserver = new ResizeObserver(() => {
+        this.cy.resize();
+      });
+      this._resizeObserver.observe(document.getElementById("graph-container"));
+
       const nodes = this.cy.nodes();
       const allPos = nodes.length > 0 && nodes.every(n => n.data("x") != null && n.data("y") != null);
       if (allPos) { this.layoutSelect.value = "preset"; this.layoutManager.runLayout("preset", { startup: true }); }
@@ -500,7 +509,21 @@ class Graph {
   async _fetchMovesetData() {
     const r = await fetch("/moveset");
     if (!r.ok) throw new Error(`Failed to fetch: ${r.status}`);
-    return await r.json();
+    const data = await r.json();
+    if (Array.isArray(data.moves)) {
+      const seen = new Set();
+      data.moves = data.moves.filter(m => {
+        const key = JSON.stringify({
+          name: m.name || "",
+          from: [...(m.from || [])].sort(),
+          to: [...(m.to || [])].sort(),
+        });
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+    return data;
   }
 
   _wireUpSaveButton() {
@@ -866,7 +889,6 @@ class Graph {
     if (sbName) sbName.textContent = "Multiple Selected";
     this.sidebar.classList.add("open");
     this.graphContainer.classList.add("sidebar-open");
-    requestAnimationFrame(() => this.cy.resize());
   }
 
   _setImage(kind, src, bust = false) {
@@ -946,7 +968,6 @@ class Graph {
             if (!this.sidebar.classList.contains('open')) {
               this.sidebar.classList.add('open');
               this.graphContainer.classList.add('sidebar-open');
-              requestAnimationFrame(() => this.cy.resize());
             }
             document.getElementById('tab-search').click();
             this.mode = 'search';
@@ -1233,7 +1254,6 @@ class Graph {
     this.cy.animate({ fit: { eles: target, padding: 120 }, duration: 600, easing: "ease-in-out" });
     if (!this.sidebar.classList.contains("open")) {
       this.sidebar.classList.add("open"); this.graphContainer.classList.add("sidebar-open");
-      requestAnimationFrame(() => this.cy.resize());
     }
     document.getElementById("tab-edit").click();
   }
@@ -1287,7 +1307,6 @@ class Graph {
     this._setImage('inspector', node ? node.data('image') : null);
     this.sidebar.classList.add("open");
     this.graphContainer.classList.add("sidebar-open");
-    if (!wasOpen) requestAnimationFrame(() => this.cy.resize());
 
     this.btnSave.disabled = !this.sbTitle.value.trim();
   }
@@ -1302,7 +1321,6 @@ class Graph {
     const sbName = document.getElementById("sb-name");
     if (sbName) sbName.textContent = "Node Inspector";
     this.cy.elements().unselect();
-    if (wasOpen) requestAnimationFrame(() => this.cy.resize());
     setTimeout(() => { this._isClosingSidebar = false; }, 150);
   }
 

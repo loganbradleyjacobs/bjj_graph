@@ -12,6 +12,28 @@ app = FastAPI()
 BASE_DIR = Path(__file__).parent
 
 
+def _move_key(move: dict) -> tuple:
+    """Canonical key for deduplicating moves: unordered from/to + name."""
+    return (
+        tuple(sorted(move.get("from") or [])),
+        tuple(sorted(move.get("to") or [])),
+        move.get("name") or "",
+    )
+
+
+def _dedupe_moves(moves: list) -> list:
+    """Drop exact duplicates (same from/to/name), keeping the first occurrence."""
+    seen = set()
+    out = []
+    for m in moves or []:
+        k = _move_key(m)
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(m)
+    return out
+
+
 def ensure_nodes_exist(data: dict, moves: list, default_type: str, parent_x: float, parent_y: float):
     """Scans moves for missing nodes and creates stubs for them."""
     nodes = data.get("positions") or {}
@@ -44,6 +66,8 @@ def get_moveset():
         moveset_path = BASE_DIR / "moveset.json"
         with open(moveset_path, encoding='utf-8') as f:
             data = json.load(f)
+        if isinstance(data.get("moves"), list):
+            data["moves"] = _dedupe_moves(data["moves"])
         return data
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Moveset @ {moveset_path} not found.")
@@ -131,15 +155,14 @@ async def create_node(request: Request):
     if notes:
         nodes[title]["notes"] = notes
 
-    # Add new moves
-    data_moves = data.get("moves") or []
-    data_moves.extend(moves)
-    data["moves"] = data_moves
+    # Frontend sends the complete moveset (existing + this node's new connections).
+    # Replace — never extend — or every new-node creation doubles the moves array.
+    data["moves"] = _dedupe_moves(moves)
 
     # Auto-create any missing nodes referenced in the connections
     ensure_nodes_exist(
         data,
-        data_moves,
+        data["moves"],
         default_type=node_type,
         parent_x=0,
         parent_y=0
@@ -206,12 +229,12 @@ async def update_node(node_id: str, request: Request):
                     m["from"] = [title if x == node_id else x for x in m["from"]]
                 if "to" in m:
                     m["to"] = [title if x == node_id else x for x in m["to"]]
-        data["moves"] = moves
+        data["moves"] = _dedupe_moves(moves)
 
         # Auto-create any missing nodes referenced in the connections
         ensure_nodes_exist(
             data,
-            moves,
+            data["moves"],
             default_type=node_type,
             parent_x=node.get("x", 0),
             parent_y=node.get("y", 0)
