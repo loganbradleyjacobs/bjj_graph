@@ -82,6 +82,14 @@
       </div>
 
       <div id="sb-single-content" class="sidebar-content">
+        <div id="sb-image-viewport" class="image-viewport">
+          <img id="sb-image" alt="Node image" />
+          <div class="image-placeholder">
+            No image available
+            <span class="hint enabled-hint">Click or drop an image</span>
+            <span class="hint disabled-hint">Save node first to add an image</span>
+          </div>
+        </div>
         <div class="form-group">
           <label>TITLE</label>
           <input type="text" id="sb-title" placeholder="e.g. Mount">
@@ -118,6 +126,10 @@
       </div>
 
       <div id="sb-search-content" class="sidebar-content" style="display: none;">
+        <div id="sb-search-image-viewport" class="image-viewport">
+          <img id="sb-search-image" alt="Node image" />
+          <div class="image-placeholder">No image available</div>
+        </div>
         <div class="form-group" style="margin-bottom: 10px;">
           <input type="text" id="sb-search-input" placeholder="Search nodes or edges..." autocomplete="off">
         </div>

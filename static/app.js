@@ -391,6 +391,7 @@ class Graph {
     this.currentTab = 'edit';
     this.searchIndex = [];
     this._isClosingSidebar = false;
+    this.pendingImage = null;
   }
 
   async initialize() {
@@ -463,6 +464,7 @@ class Graph {
       });
 
       this._setupSidebar();
+      this._setupImageUpload();
       this._buildSearchIndex();
       this._setupSearch();
 
@@ -506,6 +508,10 @@ class Graph {
     this.btnDelete = document.getElementById("sb-delete");
     this.activeNode = null;
     this.activeConnections = [];
+
+    this.sbTitle.addEventListener("input", () => {
+      this.btnSave.disabled = !this.sbTitle.value.trim();
+    });
 
     this.cy.on("dragfree", "node", evt => {
       const n = evt.target;
@@ -564,6 +570,21 @@ class Graph {
         });
         if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || "Failed"); }
 
+        // Upload the pending image (new-node only)
+        if (isNew && this.pendingImage) {
+          try {
+            const formData = new FormData();
+            formData.append('file', this.pendingImage);
+            await fetch(`/moveset/node/${encodeURIComponent(newTitle)}/image`, {
+              method: 'POST',
+              body: formData,
+            });
+          } catch (e) {
+            console.warn('Image upload failed:', e);
+          }
+          this.pendingImage = null;
+        }
+
         this._closeSidebar();
 
         const pan = { ...this.cy.pan() };
@@ -580,7 +601,7 @@ class Graph {
         alert("Error saving: " + e.message);
       } finally {
         this.btnSave.textContent = isNew ? "Create Node" : "Save Node";
-        this.btnSave.disabled = false;
+        this.btnSave.disabled = !this.sbTitle.value.trim();
       }
     });
 
@@ -617,26 +638,41 @@ class Graph {
   _syncGraph(elements) {
     const newNodes = {}, newEdges = {};
     elements.forEach(e => { if (e.data.source) newEdges[e.data.id] = e; else newNodes[e.data.id] = e; });
+
     this.cy.batch(() => {
+      // Remove deleted elements
       this.cy.nodes().forEach(n => { if (!newNodes[n.id()]) n.remove(); });
       this.cy.edges().forEach(e => { if (!newEdges[e.id()]) e.remove(); });
+
+      // Add / update nodes
       Object.values(newNodes).forEach(n => {
         const existing = this.cy.getElementById(n.data.id);
         if (existing.length > 0) {
+          // Preserve the node's current visual position AND sync data.x/y to match.
+          // The backend's stored x/y may be stale if the user dragged without saving positions.
+          const pos = { x: existing.position("x"), y: existing.position("y") };
           existing.data(n.data);
-          if (n.data.x != null && n.data.y != null) existing.position({ x: n.data.x, y: n.data.y });
+          existing.position(pos);
+          existing.data("x", pos.x);
+          existing.data("y", pos.y);
         } else {
+          // Brand-new node: use backend-provided position
           this.cy.add(n);
           const added = this.cy.getElementById(n.data.id);
-          if (added.length > 0 && n.data.x != null && n.data.y != null) added.position({ x: n.data.x, y: n.data.y });
+          if (added.length > 0 && n.data.x != null && n.data.y != null) {
+            added.position({ x: n.data.x, y: n.data.y });
+          }
         }
       });
+
+      // Add / update edges
       Object.values(newEdges).forEach(e => {
         const existing = this.cy.getElementById(e.data.id);
         if (existing.length > 0) existing.data(e.data);
         else this.cy.add(e);
       });
     });
+
     this._buildSearchIndex();
   }
 
@@ -771,6 +807,39 @@ class Graph {
     requestAnimationFrame(() => this.cy.resize());
   }
 
+  _setImage(kind, src, bust = false) {
+    const vpId = kind === 'search' ? 'sb-search-image-viewport' : 'sb-image-viewport';
+    const imgId = kind === 'search' ? 'sb-search-image' : 'sb-image';
+    const vp = document.getElementById(vpId);
+    const img = document.getElementById(imgId);
+    if (!vp || !img) return;
+
+    if (!src) {
+      vp.classList.remove('has-image');
+      img.removeAttribute('src');
+      return;
+    }
+    const finalSrc = bust ? `${src}${src.includes('?') ? '&' : '?'}v=${Date.now()}` : src;
+    if (img.getAttribute('src') === finalSrc) return;
+    img.onload = () => vp.classList.add('has-image');
+    img.onerror = () => vp.classList.remove('has-image');
+    img.src = finalSrc;
+  }
+
+  _showSearchImageForResult(id, context) {
+    let imgSrc = null;
+    if (id) {
+      if (context === "Node") {
+        const n = this.cy.getElementById(id);
+        if (n.length) imgSrc = n.data("image");
+      } else {
+        const ed = this.cy.getElementById(id);
+        if (ed.length) imgSrc = ed.source().data("image");
+      }
+    }
+    this._setImage('search', imgSrc);
+  }
+
   _buildSearchIndex() {
     this.searchIndex = [];
     const seen = new Set();
@@ -783,6 +852,80 @@ class Graph {
       if (label) {
         const k = `edge::${label}`;
         if (!seen.has(k)) { this.searchIndex.push({ id: e.id(), text: label, context: "Edge" }); seen.add(k); }
+      }
+    });
+  }
+
+  _setupImageUpload() {
+    const vp = document.getElementById('sb-image-viewport');
+    if (!vp) return;
+
+    const handleFile = async (file) => {
+      if (!file || !file.type.startsWith('image/')) {
+        alert('Please choose an image file.');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image is too large (max 10MB).');
+        return;
+      }
+
+      // New-node mode: stage the file locally and preview it
+      if (!this.activeNode) {
+        this.pendingImage = file;
+        const img = document.getElementById('sb-image');
+        img.onload = () => vp.classList.add('has-image');
+        img.src = URL.createObjectURL(file);
+        return;
+      }
+
+      // Existing node: upload immediately
+      const nodeId = this.activeNode.id();
+      const formData = new FormData();
+      formData.append('file', file);
+
+      vp.classList.add('uploading');
+      try {
+        const resp = await fetch(`/moveset/node/${encodeURIComponent(nodeId)}/image`, {
+          method: 'POST',
+          body: formData,
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          throw new Error(err.detail || 'Upload failed');
+        }
+        const { image } = await resp.json();
+
+        this.activeNode.data('image', image);
+        this.cy.getElementById(nodeId).data('image', image);
+        this._setImage('inspector', image, true); // bust to show the new bytes
+      } catch (e) {
+        alert('Upload failed: ' + e.message);
+      } finally {
+        vp.classList.remove('uploading', 'drag-over');
+      }
+    };
+
+    vp.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.addEventListener('change', e => {
+        if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+      });
+      input.click();
+    });
+
+    vp.addEventListener('dragover', e => {
+      e.preventDefault();
+      vp.classList.add('drag-over');
+    });
+    vp.addEventListener('dragleave', () => vp.classList.remove('drag-over'));
+    vp.addEventListener('drop', e => {
+      e.preventDefault();
+      vp.classList.remove('drag-over');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFile(e.dataTransfer.files[0]);
       }
     });
   }
@@ -803,6 +946,7 @@ class Graph {
         this.searchInput.focus();
       } else {
         document.getElementById("sb-search-content").style.display = "none";
+        this._setImage('search', null);
         this._handleSelectionChange();
       }
     };
@@ -812,7 +956,10 @@ class Graph {
     this.searchInput.addEventListener("input", e => {
       const q = e.target.value.trim().toLowerCase();
       this.searchResults.innerHTML = "";
-      if (!q) return;
+      if (!q) {
+        this._setImage('search', null);
+        return;
+      }
       const results = this.searchIndex
         .filter(i => i.text.toLowerCase().includes(q))
         .sort((a, b) => {
@@ -822,13 +969,25 @@ class Graph {
           if (bt.startsWith(q) && !at.startsWith(q)) return 1;
           return 0;
         }).slice(0, 4);
-      if (!results.length) { this.searchResults.innerHTML = "<li>No results</li>"; return; }
+      if (!results.length) {
+        this.searchResults.innerHTML = "<li>No results</li>";
+        this._setImage('search', null);
+        return;
+      }
       results.forEach(r => {
         const li = document.createElement("li");
+        li.dataset.id = r.id;
+        li.dataset.context = r.context;
         li.innerHTML = `<span>${r.text}</span><span class="context-tag">${r.context}</span>`;
         li.addEventListener("click", () => this._handleSearchSelect(r.id));
         this.searchResults.appendChild(li);
       });
+
+      if (results.length) {
+        this._showSearchImageForResult(results[0].id, results[0].context);
+      } else {
+        this._setImage('search', null);
+      }
     });
 
     this.searchInput.addEventListener("keydown", e => {
@@ -842,6 +1001,7 @@ class Graph {
         items.forEach(li => li.classList.remove("active"));
         items[next].classList.add("active");
         items[next].scrollIntoView({ block: 'nearest' });
+        this._showSearchImageForResult(items[next].dataset.id, items[next].dataset.context);
       } else if (e.key === "Enter") {
         e.preventDefault();
         const active = this.searchResults.querySelector("li.active") || items[0];
@@ -869,6 +1029,7 @@ class Graph {
   _openSidebar(node) {
     const wasOpen = this.sidebar.classList.contains("open");
     this.activeNode = node;
+    this.pendingImage = null;
 
     this.currentTab = 'edit';
     document.getElementById("tab-edit").classList.add("active");
@@ -908,9 +1069,12 @@ class Graph {
     }
 
     this._renderConnections();
+    this._setImage('inspector', node ? node.data('image') : null);
     this.sidebar.classList.add("open");
     this.graphContainer.classList.add("sidebar-open");
     if (!wasOpen) requestAnimationFrame(() => this.cy.resize());
+
+    this.btnSave.disabled = !this.sbTitle.value.trim();
   }
 
   _closeSidebar() {

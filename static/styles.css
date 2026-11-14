@@ -368,3 +368,66 @@ input, select, textarea, button {
   100% { background: rgba(0, 0, 0, 0.15); border-color: #444; box-shadow: none; }
 }
 .connection-row.flash-new { animation: flashHighlight 1.5s ease-out forwards; }
+
+.image-viewport {
+  width: 100%;
+  height: 200px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #444;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.image-viewport img {
+  display: none;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.image-viewport.has-image img { display: block; }
+.image-viewport.has-image .image-placeholder { display: none; }
+.image-placeholder {
+  color: #666;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Interactive inspector image viewport (search viewport stays static) */
+#sb-image-viewport { cursor: pointer; }
+#sb-image-viewport:hover { border-color: var(--accent); background: rgba(104, 151, 187, 0.08); }
+#sb-image-viewport.drag-over {
+  border-color: var(--accent); border-style: dashed;
+  background: rgba(104, 151, 187, 0.25);
+}
+#sb-image-viewport.uploading { opacity: 0.6; pointer-events: none; }
+#sb-image-viewport.uploading::after {
+  content: "Uploading…"; position: absolute;
+  color: var(--accent); font-weight: bold;
+}
+#sb-image-viewport.disabled { cursor: default; }
+#sb-image-viewport.disabled:hover { border-color: #444; background: rgba(0, 0, 0, 0.3); }
+
+.image-placeholder .hint {
+  display: block; margin-top: 6px;
+  font-size: 0.75rem; font-style: normal;
+}
+.image-placeholder .enabled-hint { color: var(--accent); }
+.image-placeholder .disabled-hint { color: #666; display: none; }
+#sb-image-viewport.disabled .enabled-hint { display: none; }
+#sb-image-viewport.disabled .disabled-hint { display: block; }
+
+/* Replace overlay when an image already exists */
+#sb-image-viewport.has-image { cursor: pointer; }
+#sb-image-viewport.has-image::after {
+  content: "Click or drop to replace";
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.75); color: #fff; font-size: 0.85rem;
+  opacity: 0; transition: opacity 0.2s; pointer-events: none;
+}
+#sb-image-viewport.has-image:hover::after { opacity: 1; }
+#sb-image-viewport.disabled.has-image::after { content: ""; }

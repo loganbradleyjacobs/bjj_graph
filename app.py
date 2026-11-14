@@ -1,6 +1,7 @@
 import json
 import random
-from fastapi import FastAPI, HTTPException, Request
+import re
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -227,15 +228,48 @@ def delete_node(node_id: str):
     moveset_path = BASE_DIR / "moveset.json"
     if not moveset_path.exists():
         raise HTTPException(status_code=404, detail="moveset.json not found")
-        
+
     data = json.loads(moveset_path.read_text(encoding="utf-8"))
     nodes = data.get("positions") or {}
-    
+
     if node_id not in nodes:
         raise HTTPException(status_code=404, detail="Node not found")
-        
+
+    # --- Identify image file to delete (explicit or auto-derived) ---
+    node = nodes[node_id]
+    img_path_to_delete = None
+
+    explicit = node.get("image")
+    if explicit and explicit.startswith("/static/images/"):
+        filename = explicit.split("/")[-1]
+        candidate = BASE_DIR / "static" / "images" / filename
+        if candidate.exists():
+            img_path_to_delete = candidate
+    else:
+        # Fall back to auto-derived filename (slug.ext)
+        slug = node_id.lower().replace(" ", "_")
+        for ext in (".png", ".jpg", ".jpeg", ".gif", ".webp"):
+            candidate = BASE_DIR / "static" / "images" / f"{slug}{ext}"
+            if candidate.exists():
+                img_path_to_delete = candidate
+                break
+
+    if img_path_to_delete:
+        # Skip deletion if another node references the same image
+        target_rel = f"/static/images/{img_path_to_delete.name}"
+        shared = any(
+            k != node_id and (v.get("image") or "").endswith(img_path_to_delete.name)
+            for k, v in nodes.items()
+        )
+        if not shared:
+            try:
+                img_path_to_delete.unlink()
+            except OSError as e:
+                print(f"Failed to delete image {img_path_to_delete}: {e}")
+    # ----------------------------------------------------------------
+
     del nodes[node_id]
-    
+
     # Trim moves that reference the deleted node, keeping valid connections
     trimmed_moves = []
     for m in (data.get("moves") or []):
@@ -246,11 +280,11 @@ def delete_node(node_id: str):
             m["to"] = new_to
             trimmed_moves.append(m)
     data["moves"] = trimmed_moves
-    
+
     backup_path = moveset_path.with_suffix(".json.bak")
     backup_path.write_text(moveset_path.read_text(encoding="utf-8"), encoding="utf-8")
     moveset_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    
+
     return {"status": "success"}
 
 @app.post("/moveset/restore")
@@ -261,3 +295,41 @@ def restore_moveset():
         raise HTTPException(status_code=404, detail="No backup found")
     moveset_path.write_text(backup_path.read_text(encoding="utf-8"), encoding="utf-8")
     return {"status": "restored"}
+
+@app.post("/moveset/node/{node_id}/image")
+async def upload_node_image(node_id: str, file: UploadFile = File(...)):
+    moveset_path = BASE_DIR / "moveset.json"
+    if not moveset_path.exists():
+        raise HTTPException(status_code=404, detail="moveset.json not found")
+
+    data = json.loads(moveset_path.read_text(encoding="utf-8"))
+    nodes = data.get("positions") or {}
+
+    if node_id not in nodes:
+        raise HTTPException(status_code=404, detail=f"Node {node_id!r} not found")
+
+    ext = Path(file.filename or "").suffix.lower()
+    allowed = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+    if ext not in allowed:
+        raise HTTPException(status_code=400, detail=f"Unsupported format: {ext or 'none'}")
+
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image exceeds 10MB limit")
+
+    # Match the frontend auto-derive convention: lowercase, spaces -> underscores
+    slug = node_id.lower().replace(" ", "_")
+    filename = f"{slug}{ext}"
+
+    images_dir = BASE_DIR / "static" / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+    (images_dir / filename).write_bytes(contents)
+
+    image_path = f"/static/images/{filename}"
+    nodes[node_id]["image"] = image_path
+
+    backup_path = moveset_path.with_suffix(".json.bak")
+    backup_path.write_text(moveset_path.read_text(encoding="utf-8"), encoding="utf-8")
+    moveset_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    return {"image": image_path, "filename": filename}
