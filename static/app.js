@@ -366,27 +366,25 @@ class GraphInteractionManager {
       const connectedNodes = connectedEdges.connectedNodes();
       const sub = connectedEdges.union(connectedNodes).union(node);
 
-      // Compute fit target once, then animate zoom+pan explicitly
-      const bb = sub.boundingBox();
-      if (bb.w === 0 && bb.h === 0) return; // guard: single point / empty
-
-      const w = this.cy.width();
-      const h = this.cy.height();
-      const pad = 120;
-      const targetZoom = Math.min(
-        (w - 2 * pad) / Math.max(bb.w, 1),
-        (h - 2 * pad) / Math.max(bb.h, 1)
-      );
-      const targetPan = {
-        x: w / 2 - targetZoom * (bb.x1 + bb.w / 2),
-        y: h / 2 - targetZoom * (bb.y1 + bb.h / 2),
+      const doAnimate = () => {
+        const bb = sub.boundingBox();
+        if (bb.w === 0 && bb.h === 0) return;
+        const w = this.cy.width();
+        const h = this.cy.height();
+        const pad = 120;
+        const targetZoom = Math.min(
+          (w - 2 * pad) / Math.max(bb.w, 1),
+          (h - 2 * pad) / Math.max(bb.h, 1)
+        );
+        const targetPan = {
+          x: w / 2 - targetZoom * (bb.x1 + bb.w / 2),
+          y: h / 2 - targetZoom * (bb.y1 + bb.h / 2),
+        };
+        this.cy.animate({ zoom: targetZoom, pan: targetPan, duration: 600, easing: "ease-in-out" });
       };
 
-      // Delay briefly so the sidebar's cy.resize() has settled (or use 0 if sidebar is already open)
-      const delay = this.graphRef.sidebar.classList.contains("open") ? 0 : 150;
-      setTimeout(() => {
-        this.cy.animate({ zoom: targetZoom, pan: targetPan, duration: 600, easing: "ease-in-out" });
-      }, delay);
+      const wasClosed = !this.graphRef.sidebar.classList.contains("open");
+      setTimeout(doAnimate, wasClosed ? 150 : 0);
     });
 
     this.cy.on("tap", evt => {
@@ -430,15 +428,6 @@ class Graph {
       this.layoutManager = new GraphLayoutManager(this.cy, this.styleManager);
       this.interactionManager = new GraphInteractionManager(this.cy, this.layoutSelect, this.edgeStyleSelect, this);
       this.tooltipManager = new GraphTooltipManager(this.cy);
-
-      // Keep the Cytoscape canvas in lockstep with the container during
-      // sidebar open/close (and any other width change). A one-shot
-      // requestAnimationFrame(() => cy.resize()) misses the CSS transition,
-      // causing a ~100ms mismatch between canvas size and container width.
-      this._resizeObserver = new ResizeObserver(() => {
-        this.cy.resize();
-      });
-      this._resizeObserver.observe(document.getElementById("graph-container"));
 
       const nodes = this.cy.nodes();
       const allPos = nodes.length > 0 && nodes.every(n => n.data("x") != null && n.data("y") != null);
@@ -526,6 +515,14 @@ class Graph {
     return data;
   }
 
+  _scheduleResize(onDone) {
+    clearTimeout(this._resizeTimer);
+    this._resizeTimer = setTimeout(() => {
+      this.cy.resize();
+      if (onDone) onDone();
+    }, 120);
+  }
+
   _wireUpSaveButton() {
     const btn = document.getElementById("savePositions");
     const status = document.getElementById("saveStatus");
@@ -572,7 +569,9 @@ class Graph {
     rh.addEventListener("mousedown", e => {
       resizing = true; sx = e.clientX;
       sw = parseInt(document.defaultView.getComputedStyle(this.sidebar).width, 10);
-      this.sidebar.classList.add("resizing"); rh.classList.add("dragging");
+      this.sidebar.classList.add("resizing");
+      this.graphContainer.classList.add("resizing");
+      rh.classList.add("dragging");
       document.body.style.cursor = "col-resize";
     });
     document.addEventListener("mousemove", e => {
@@ -582,9 +581,12 @@ class Graph {
     });
     document.addEventListener("mouseup", () => {
       if (!resizing) return;
-      resizing = false; this.sidebar.classList.remove("resizing");
-      rh.classList.remove("dragging"); document.body.style.cursor = "default";
-      this.cy.resize();
+      resizing = false;
+      this.sidebar.classList.remove("resizing");
+      this.graphContainer.classList.remove("resizing");
+      rh.classList.remove("dragging");
+      document.body.style.cursor = "default";
+      this.cy.resize();   // sync is correct: transition is disabled during drag
     });
 
     this.btnSave.addEventListener("click", async () => {
@@ -889,6 +891,7 @@ class Graph {
     if (sbName) sbName.textContent = "Multiple Selected";
     this.sidebar.classList.add("open");
     this.graphContainer.classList.add("sidebar-open");
+    this._scheduleResize();
   }
 
   _setImage(kind, src, bust = false) {
@@ -1249,12 +1252,16 @@ class Graph {
     this.searchInput.value = ""; this.searchResults.innerHTML = "";
     this.cy.elements().unselect();
     let target;
-    if (ele.isNode()) { target = ele.union(ele.connectedEdges()).union(ele.neighborhood()); ele.select(); }
-    else if (ele.isEdge()) { target = ele.union(ele.source()).union(ele.target()); ele.source().select(); }
-    this.cy.animate({ fit: { eles: target, padding: 120 }, duration: 600, easing: "ease-in-out" });
-    if (!this.sidebar.classList.contains("open")) {
-      this.sidebar.classList.add("open"); this.graphContainer.classList.add("sidebar-open");
+    if (ele.isNode()) {
+      target = ele.union(ele.connectedEdges()).union(ele.neighborhood());
+      ele.select();   // fires select → _openSidebar → schedules resize
+    } else if (ele.isEdge()) {
+      target = ele.union(ele.source()).union(ele.target());
+      ele.source().select();
     }
+    this._scheduleResize(() => {
+      this.cy.animate({ fit: { eles: target, padding: 120 }, duration: 600, easing: "ease-in-out" });
+    });
     document.getElementById("tab-edit").click();
   }
 
@@ -1307,6 +1314,7 @@ class Graph {
     this._setImage('inspector', node ? node.data('image') : null);
     this.sidebar.classList.add("open");
     this.graphContainer.classList.add("sidebar-open");
+    if (!wasOpen) this._scheduleResize();
 
     this.btnSave.disabled = !this.sbTitle.value.trim();
   }
@@ -1321,6 +1329,7 @@ class Graph {
     const sbName = document.getElementById("sb-name");
     if (sbName) sbName.textContent = "Node Inspector";
     this.cy.elements().unselect();
+    if (wasOpen) this._scheduleResize();
     setTimeout(() => { this._isClosingSidebar = false; }, 150);
   }
 
