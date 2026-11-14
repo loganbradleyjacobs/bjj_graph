@@ -221,8 +221,8 @@ html, body {
 .btn:hover { background: #5c6164; }
 .btn.primary { background: var(--accent); color: #fff; }
 .btn.primary:hover { background: #7ba8cc; }
-.btn.danger { background: #cc7832; color: #fff; }
-.btn.danger:hover { background: #e0883e; }
+.btn.danger { background: #c0392b; color: #fff; }
+.btn.danger:hover { background: #ff5555; }
 .btn.small { padding: 2px 8px; font-size: 0.75rem; flex: none; }
 
 /* Connection Editor */
@@ -273,7 +273,7 @@ html, body {
   padding-bottom: 8px;
 }
 .connection-row .delete-conn {
-  color: #cc7832;
+  color: #ff5555;
   background: none;
   border: none;
   cursor: pointer;
@@ -431,3 +431,18 @@ input, select, textarea, button {
 }
 #sb-image-viewport.has-image:hover::after { opacity: 1; }
 #sb-image-viewport.disabled.has-image::after { content: ""; }
+
+/* Focus ring for keyboard navigation */
+.node.keyboard-focus {
+  border-color: #fff;
+  border-width: 6;
+  overlay-color: #fff;
+  overlay-padding: 4;
+}
+.connection-row.keyboard-focus,
+#sb-search-results li.keyboard-focus,
+#sb-multi-list li.keyboard-focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+#sidebar:focus-within { outline: none; }

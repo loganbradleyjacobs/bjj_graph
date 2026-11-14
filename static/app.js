@@ -68,6 +68,14 @@ class GraphStyleManager {
       { selector: "edge.curve-taxi", style: { "curve-style": "taxi" } },
       { selector: "edge.avoid-overlap", style: { "curve-style": "unbundled-bezier", "control-point-distances": 60, "control-point-weights": 0.5 } },
       { selector: "edge.highlighted", style: { "line-color": "#ffffff", "opacity": 1, "z-index": 10 } },
+      {
+        selector: "node.highlighted",
+        style: {
+          "border-color": "#ffffff",
+          "border-width": 6,
+          "z-index": 10
+        }
+      },
       { selector: "edge.faded", style: { opacity: 0.1 } },
       { selector: "node.faded", style: { opacity: 0.15 } },
     ];
@@ -326,7 +334,10 @@ class GraphInteractionManager {
     const updateHighlights = () => {
       this.cy.batch(() => {
         this.cy.elements().removeClass("highlighted").removeClass("faded");
+
         const selected = this.cy.nodes(":selected");
+        if (selected.length === 0) return;
+
         if (selected.length === 1) {
           const node = selected[0];
           const connectedEdges = node.connectedEdges();
@@ -334,6 +345,13 @@ class GraphInteractionManager {
           connectedEdges.addClass("highlighted");
           const keepVisible = connectedEdges.union(connectedNodes).union(node);
           this.cy.elements().not(keepVisible).addClass("faded");
+        } else {
+          // Multi-select: highlight selected nodes, and only edges connecting them
+          const edgesBetween = selected.edgesWith(selected);
+          edgesBetween.addClass("highlighted");
+          const allVisible = selected.union(edgesBetween);
+          this.cy.elements().not(allVisible).addClass("faded");
+          selected.addClass("highlighted");
         }
       });
     };
@@ -373,6 +391,7 @@ class GraphInteractionManager {
 
     this.cy.on("tap", evt => {
       if (evt.target === this.cy) {
+        this.graphRef.mode = 'graph';
         const had = this.cy.nodes(":selected").length > 0;
         this.cy.elements().unselect();
         if (!had) this.graphRef._openSidebar(null);
@@ -467,11 +486,14 @@ class Graph {
       this._setupImageUpload();
       this._buildSearchIndex();
       this._setupSearch();
+      this._setupKeyboard();
 
       this.cy.on("layoutstop", () => this.styleManager.detectOverlappingEdges());
       this.cy.on("dragfree", "node", () => this.styleManager.detectOverlappingEdges());
-
-      document.addEventListener("keydown", e => { if (e.key === "Escape") this._closeSidebar(); });
+      this.cy.on("boxend", () => {
+        // Workaround: force a redraw to clear the selection box overlay
+        requestAnimationFrame(() => this.cy.style().update());
+      });
     } catch (err) { console.error("Init failed:", err); }
   }
 
@@ -507,6 +529,7 @@ class Graph {
     this.btnSave = document.getElementById("sb-save");
     this.btnDelete = document.getElementById("sb-delete");
     this.activeNode = null;
+    this._multiSelectNodes = null;
     this.activeConnections = [];
 
     this.sbTitle.addEventListener("input", () => {
@@ -606,6 +629,40 @@ class Graph {
     });
 
     this.btnDelete.addEventListener("click", async () => {
+      if (this._multiSelectNodes && this._multiSelectNodes.length > 0) {
+        const ids = this._multiSelectNodes.map(n => n.id());
+        if (!confirm(`Delete ${ids.length} nodes? This also removes their connections.`)) return;
+        this.btnDelete.textContent = "Deleting...";
+        this.btnDelete.disabled = true;
+        try {
+          for (const id of ids) {
+            const r = await fetch(`/moveset/node/${encodeURIComponent(id)}`, { method: "DELETE" });
+            if (!r.ok) throw new Error(`Failed to delete ${id}`);
+            this.allMoves = this.allMoves
+              .map(m => ({
+                ...m,
+                from: (m.from || []).filter(x => x !== id),
+                to: (m.to || []).filter(x => x !== id),
+              }))
+              .filter(m => m.from.length > 0 && m.to.length > 0);
+            const n = this.cy.getElementById(id);
+            if (n.length) {
+              this.cy.remove(n.connectedEdges());
+              this.cy.remove(n);
+            }
+          }
+          this._buildSearchIndex();
+          this._isClosingSidebar = true;
+          this.cy.elements().unselect();
+          this._closeSidebar();
+        } catch (e) {
+          alert("Error: " + e.message);
+        } finally {
+          this.btnDelete.textContent = "Delete Node";
+          this.btnDelete.disabled = false;
+        }
+        return;
+      }
       if (!this.activeNode) return;
       const nodeId = this.activeNode.id();
       if (!confirm(`Delete node "${nodeId}"?`)) return;
@@ -790,6 +847,10 @@ class Graph {
 
   _showMultiSelect(nodes) {
     this.activeNode = null;
+    this._multiSelectNodes = nodes.toArray ? nodes.toArray() : Array.from(nodes);
+    this.btnSave.style.display = "none";
+    this.btnDelete.textContent = "Delete Nodes";
+    this.keyboardFocusIndex = -1;
     document.getElementById("sb-single-content").style.display = "none";
     document.getElementById("sb-search-content").style.display = "none";
     document.getElementById("sb-multi-select").style.display = "block";
@@ -801,7 +862,8 @@ class Graph {
       li.addEventListener("click", () => { this.cy.elements().unselect(); n.select(); });
       list.appendChild(li);
     });
-    document.getElementById("sb-name").textContent = "Multiple Selected";
+    const sbName = document.getElementById("sb-name");
+    if (sbName) sbName.textContent = "Multiple Selected";
     this.sidebar.classList.add("open");
     this.graphContainer.classList.add("sidebar-open");
     requestAnimationFrame(() => this.cy.resize());
@@ -839,6 +901,169 @@ class Graph {
     }
     this._setImage('search', imgSrc);
   }
+
+  _setupKeyboard() {
+    this.keyboardFocusIndex = -1;   // index into nav list of sidebar
+    this.mode = 'graph';            // 'graph' | 'sidebar' | 'search'
+
+    document.addEventListener('keydown', (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+
+      // Active-element guard: text fields own their own arrow / Enter semantics
+      const activeEl = document.activeElement;
+      const isTextField = !!activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT'
+      );
+
+      // ---- Global Cmd/Ctrl shortcuts (work from any focus) ----
+      if (mod) {
+        switch (e.key.toLowerCase()) {
+          case 's':
+            e.preventDefault();
+            document.getElementById('savePositions')?.click();
+            return;
+          case 'n':
+            e.preventDefault();
+            this.cy.elements().unselect();
+            this._openSidebar(null);
+            this.mode = 'sidebar';
+            setTimeout(() => {
+              this.sbTitle.value = '';
+              this.sbTitle.focus();
+            }, 0);
+            return;
+          case 'g':
+            e.preventDefault();
+            this.sbTitle.blur();
+            this.searchInput.blur();
+            this.mode = 'graph';
+            this.cy.container().focus();
+            return;
+          case 'f':
+            e.preventDefault();
+            if (!this.sidebar.classList.contains('open')) {
+              this.sidebar.classList.add('open');
+              this.graphContainer.classList.add('sidebar-open');
+              requestAnimationFrame(() => this.cy.resize());
+            }
+            document.getElementById('tab-search').click();
+            this.mode = 'search';
+            this.searchInput.focus();
+            return;
+          case 'e':
+            e.preventDefault();
+            if (this.sidebar.classList.contains('open')) this._closeSidebar();
+            else this._openSidebar(this.activeNode);
+            return;
+        }
+        return;
+      }
+
+      // Alt+N fallback — use e.code because Option+N is a dead key on macOS
+      if (e.altKey && e.code === 'KeyN') {
+        e.preventDefault();
+        this.cy.elements().unselect();
+        this._openSidebar(null);
+        this.mode = 'sidebar';
+        setTimeout(() => {
+          this.sbTitle.value = '';
+          this.sbTitle.focus();
+        }, 0);
+        return;
+      }
+
+      // ---- Esc: single press closes sidebar / clears search / clears selection ----
+      if (e.key === 'Escape') {
+        if (this.mode === 'search' && this.searchInput.value) {
+          this.searchInput.value = '';
+          this.searchInput.dispatchEvent(new Event('input'));
+          return;
+        }
+        if (this.sidebar.classList.contains('open')) {
+          this._closeSidebar();
+          this.mode = 'graph';
+          this.cy.container().focus();
+          return;
+        }
+        this.cy.elements().unselect();
+        this.cy.nodes().removeClass('keyboard-focus');
+        return;
+      }
+
+      // ---- Text-field guard: do not steal nav keys from text fields ----
+      if (isTextField) {
+        // Exception: in search mode, Up/Down navigate results while typing
+        if (this.mode === 'search' && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+          e.preventDefault();
+          this._moveSidebarFocus(e.key === 'ArrowDown' ? 1 : -1);
+          return;
+        }
+        // Enter only intercepts if a nav row has explicit keyboard focus
+        if (e.key === 'Enter') {
+          const active = document.querySelector(
+            '.connection-row.keyboard-focus, #sb-search-results li.keyboard-focus, #sb-multi-list li.keyboard-focus'
+          );
+          if (active) {
+            e.preventDefault();
+            active.click();
+          } else if (this.mode === 'search') {
+            const first = document.querySelector('#sb-search-results li');
+            if (first) { e.preventDefault(); first.click(); }
+          }
+        }
+        return; // let the browser handle everything else
+      }
+
+      // ---- Sidebar / search nav: arrows only (j/k removed) ----
+      if (this.mode === 'sidebar' || this.mode === 'search') {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          this._moveSidebarFocus(e.key === 'ArrowDown' ? 1 : -1);
+          return;
+        }
+        if (e.key === 'Enter') {
+          const active = document.querySelector(
+            '.connection-row.keyboard-focus, #sb-search-results li.keyboard-focus, #sb-multi-list li.keyboard-focus'
+          );
+          if (active) {
+            e.preventDefault();
+            active.click();
+          } else if (this.mode === 'search') {
+            const first = document.querySelector('#sb-search-results li');
+            if (first) { e.preventDefault(); first.click(); }
+          }
+          return;
+        }
+      }
+    }, { capture: true });
+
+    // Track mode based on focus
+    this.sbTitle.addEventListener('focus', () => { this.mode = 'sidebar'; });
+    this.searchInput.addEventListener('focus', () => { this.mode = 'search'; });
+    this.cy.on('tap', 'node', () => { this.mode = 'graph'; });
+  }
+
+  _moveSidebarFocus(direction) {
+    const container = this.mode === 'search'
+      ? document.getElementById('sb-search-results')
+      : this.sbConnections;
+    if (!container) return;
+
+    const rows = Array.from(container.querySelectorAll(
+      this.mode === 'search' ? 'li' : '.connection-row'
+    ));
+    if (!rows.length) return;
+
+    if (this.keyboardFocusIndex >= rows.length) this.keyboardFocusIndex = -1;
+
+    rows.forEach(r => r.classList.remove('keyboard-focus'));
+    this.keyboardFocusIndex = Math.max(0, Math.min(rows.length - 1, this.keyboardFocusIndex + direction));
+    rows[this.keyboardFocusIndex].classList.add('keyboard-focus');
+    rows[this.keyboardFocusIndex].scrollIntoView({ block: 'nearest' });
+  }
+
 
   _buildSearchIndex() {
     this.searchIndex = [];
@@ -933,8 +1158,11 @@ class Graph {
   _setupSearch() {
     this.searchInput = document.getElementById("sb-search-input");
     this.searchResults = document.getElementById("sb-search-results");
+    this._searchDebounceTimer = null;
+    this._searchImageTimer = null;
 
     const switchTab = tab => {
+      this.keyboardFocusIndex = -1;
       this.currentTab = tab;
       document.getElementById("tab-edit").classList.toggle("active", tab === 'edit');
       document.getElementById("tab-search").classList.toggle("active", tab === 'search');
@@ -953,61 +1181,45 @@ class Graph {
     document.getElementById("tab-edit").addEventListener("click", () => switchTab('edit'));
     document.getElementById("tab-search").addEventListener("click", () => switchTab('search'));
 
-    this.searchInput.addEventListener("input", e => {
-      const q = e.target.value.trim().toLowerCase();
-      this.searchResults.innerHTML = "";
-      if (!q) {
-        this._setImage('search', null);
-        return;
-      }
-      const results = this.searchIndex
-        .filter(i => i.text.toLowerCase().includes(q))
-        .sort((a, b) => {
-          const at = a.text.toLowerCase(), bt = b.text.toLowerCase();
-          if (at === q) return -1; if (bt === q) return 1;
-          if (at.startsWith(q) && !bt.startsWith(q)) return -1;
-          if (bt.startsWith(q) && !at.startsWith(q)) return 1;
-          return 0;
-        }).slice(0, 4);
-      if (!results.length) {
-        this.searchResults.innerHTML = "<li>No results</li>";
-        this._setImage('search', null);
-        return;
-      }
-      results.forEach(r => {
-        const li = document.createElement("li");
-        li.dataset.id = r.id;
-        li.dataset.context = r.context;
-        li.innerHTML = `<span>${r.text}</span><span class="context-tag">${r.context}</span>`;
-        li.addEventListener("click", () => this._handleSearchSelect(r.id));
-        this.searchResults.appendChild(li);
-      });
-
-      if (results.length) {
-        this._showSearchImageForResult(results[0].id, results[0].context);
-      } else {
-        this._setImage('search', null);
-      }
+    this.searchInput.addEventListener("input", () => {
+      clearTimeout(this._searchDebounceTimer);
+      this._searchDebounceTimer = setTimeout(() => {
+        const q = this.searchInput.value.trim().toLowerCase();
+        this.searchResults.innerHTML = "";
+        this.keyboardFocusIndex = -1;
+        if (!q) {
+          this._setImage('search', null);
+          return;
+        }
+        const results = this.searchIndex
+          .filter(i => i.text.toLowerCase().includes(q))
+          .sort((a, b) => {
+            const at = a.text.toLowerCase(), bt = b.text.toLowerCase();
+            if (at === q) return -1; if (bt === q) return 1;
+            if (at.startsWith(q) && !bt.startsWith(q)) return -1;
+            if (bt.startsWith(q) && !at.startsWith(q)) return 1;
+            return 0;
+          }).slice(0, 4);
+        if (!results.length) {
+          this.searchResults.innerHTML = "<li>No results</li>";
+          this._setImage('search', null);
+          return;
+        }
+        results.forEach(r => {
+          const li = document.createElement("li");
+          li.dataset.id = r.id;
+          li.dataset.context = r.context;
+          li.innerHTML = `<span>${r.text}</span><span class="context-tag">${r.context}</span>`;
+          li.addEventListener("click", () => this._handleSearchSelect(r.id));
+          this.searchResults.appendChild(li);
+        });
+        clearTimeout(this._searchImageTimer);
+        this._searchImageTimer = setTimeout(() => {
+          this._showSearchImageForResult(results[0].id, results[0].context);
+        }, 200);
+      }, 120);
     });
 
-    this.searchInput.addEventListener("keydown", e => {
-      const items = this.searchResults.querySelectorAll("li");
-      if (!items.length) return;
-      if (e.key === "Tab") {
-        e.preventDefault();
-        const cur = Array.from(items).findIndex(li => li.classList.contains("active"));
-        let next = (cur + (e.shiftKey ? -1 : 1)) % items.length;
-        if (cur === -1 && e.shiftKey) next = items.length - 1;
-        items.forEach(li => li.classList.remove("active"));
-        items[next].classList.add("active");
-        items[next].scrollIntoView({ block: 'nearest' });
-        this._showSearchImageForResult(items[next].dataset.id, items[next].dataset.context);
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        const active = this.searchResults.querySelector("li.active") || items[0];
-        if (active) active.click();
-      }
-    });
   }
 
   _handleSearchSelect(id) {
@@ -1029,7 +1241,10 @@ class Graph {
   _openSidebar(node) {
     const wasOpen = this.sidebar.classList.contains("open");
     this.activeNode = node;
+    this._multiSelectNodes = null;
+    this.btnSave.style.display = "";
     this.pendingImage = null;
+    this.keyboardFocusIndex = -1;
 
     this.currentTab = 'edit';
     document.getElementById("tab-edit").classList.add("active");
@@ -1083,6 +1298,7 @@ class Graph {
     this.sidebar.classList.remove("open");
     this.graphContainer.classList.remove("sidebar-open");
     this.activeNode = null;
+    this._multiSelectNodes = null;
     const sbName = document.getElementById("sb-name");
     if (sbName) sbName.textContent = "Node Inspector";
     this.cy.elements().unselect();

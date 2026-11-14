@@ -1,0 +1,1 @@
+/bug there is a bug where when the sidebar is opened or closed, there is a flicker to the graph ~100ms.
