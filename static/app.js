@@ -58,7 +58,7 @@ class GraphStyleManager {
       { selector: "edge.hide-edge-label", style: { label: "" } },
       { selector: "node[?stub]", style: { "border-style": "dashed", "border-color": "#ff5555", "background-color": "#552222" } },
       { selector: "edge", style: this._getEdgeStyles() },
-      { selector: 'edge[moveType = "Finish"]', style: { "line-color": "#d62728" } },
+      { selector: 'edge[moveType = "Finish"]', style: { "line-color": "#d62728", "target-arrow-color": "#d62728" } },
       { selector: 'edge[moveType = "Escape"]', style: { "line-style": "dashed", opacity: 0.7 } },
       { selector: "edge.curve-straight", style: { "curve-style": "straight" } },
       { selector: "edge.curve-bezier", style: { "curve-style": "bezier" } },
@@ -67,7 +67,7 @@ class GraphStyleManager {
       { selector: "edge.curve-segments", style: { "curve-style": "segments" } },
       { selector: "edge.curve-taxi", style: { "curve-style": "taxi" } },
       { selector: "edge.avoid-overlap", style: { "curve-style": "unbundled-bezier", "control-point-distances": 60, "control-point-weights": 0.5 } },
-      { selector: "edge.highlighted", style: { "line-color": "#ffffff", "opacity": 1, "z-index": 10 } },
+      { selector: "edge.highlighted", style: { "line-color": "#ffffff", "target-arrow-color": "#ffffff", "arrow-scale": 1.6, "opacity": 1, "z-index": 10 } },
       {
         selector: "node.highlighted",
         style: {
@@ -100,8 +100,13 @@ class GraphStyleManager {
 
   _getEdgeStyles() {
     return {
-      width: 1, "line-color": CONFIG.edgeColor,
-      "target-arrow-shape": "none", "source-arrow-shape": "none", "curve-style": "bezier",
+      width: 1,
+      "line-color": CONFIG.edgeColor,
+      "target-arrow-shape": "triangle",
+      "target-arrow-color": CONFIG.edgeColor,
+      "arrow-scale": 1.2,
+      "source-arrow-shape": "none",
+      "curve-style": "bezier",
       label: ele => ele.data("label") || "", "font-size": 8, color: "#fff",
       "text-rotation": "autorotate", "text-background-opacity": 0.7,
       "text-background-color": "#000", "text-background-padding": 2,
@@ -459,7 +464,10 @@ class Graph {
       });
       document.getElementById("edgeColorPicker").addEventListener("input", e => {
         CONFIG.edgeColor = e.target.value;
-        this.cy.edges().style({ "line-color": CONFIG.edgeColor });
+        this.cy.edges().style({
+          "line-color": CONFIG.edgeColor,
+          "target-arrow-color": CONFIG.edgeColor,
+        });
       });
       document.getElementById("resetColors").addEventListener("click", () => {
         document.documentElement.style.setProperty("--page-bg", "#5050a0");
@@ -467,7 +475,10 @@ class Graph {
           "background-color": el => CONFIG.nodeColors[el.data("type")] || CONFIG.nodeColors.default,
           "border-color": el => CONFIG.nodeColors[el.data("type")] || CONFIG.nodeColors.default,
         });
-        this.cy.edges().style({ "line-color": CONFIG.edgeColor });
+        this.cy.edges().style({
+          "line-color": CONFIG.edgeColor,
+          "target-arrow-color": CONFIG.edgeColor,
+        });
       });
 
       this._wireUpSaveButton();
@@ -1084,8 +1095,12 @@ class Graph {
 
     rows.forEach(r => r.classList.remove('keyboard-focus'));
     this.keyboardFocusIndex = Math.max(0, Math.min(rows.length - 1, this.keyboardFocusIndex + direction));
-    rows[this.keyboardFocusIndex].classList.add('keyboard-focus');
-    rows[this.keyboardFocusIndex].scrollIntoView({ block: 'nearest' });
+    const focused = rows[this.keyboardFocusIndex];
+    focused.classList.add('keyboard-focus');
+    focused.scrollIntoView({ block: 'nearest' });
+    if (this.mode === 'search' && focused.dataset.id) {
+      this._showSearchImageForResult(focused.dataset.id, focused.dataset.context);
+    }
   }
 
 
