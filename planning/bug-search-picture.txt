@@ -1,1 +1,0 @@
-/bug there is a bug where when you switch the focused search result in the search tab w/ arrow keys, the image doesn't switch along with it.

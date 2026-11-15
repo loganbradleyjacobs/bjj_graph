@@ -67,6 +67,7 @@ class GraphStyleManager {
       { selector: "edge.curve-segments", style: { "curve-style": "segments" } },
       { selector: "edge.curve-taxi", style: { "curve-style": "taxi" } },
       { selector: "edge.avoid-overlap", style: { "curve-style": "unbundled-bezier", "control-point-distances": 60, "control-point-weights": 0.5 } },
+      { selector: "edge.bidirectional",  style: { "curve-style": "unbundled-bezier", "control-point-distances": 40, "control-point-weights": 0.5 } },
       { selector: "edge.highlighted", style: { "line-color": "#ffffff", "target-arrow-color": "#ffffff", "arrow-scale": 1.6, "opacity": 1, "z-index": 10 } },
       {
         selector: "node.highlighted",
@@ -138,6 +139,7 @@ class GraphStyleManager {
   }
 
   detectOverlappingEdges() {
+    this.detectBidirectionalEdges();
     const THRESH = 0.98;
     this.cy.batch(() => {
       this.cy.edges().removeClass("avoid-overlap");
@@ -158,6 +160,29 @@ class GraphStyleManager {
             if (dot > THRESH) v2.edge.addClass("avoid-overlap");
           }
         }
+      });
+    });
+  }
+
+  detectBidirectionalEdges() {
+    const pairs = new Map();
+    this.cy.edges().forEach(e => {
+      const key = [e.source().id(), e.target().id()].sort().join("::");
+      if (!pairs.has(key)) pairs.set(key, []);
+      pairs.get(key).push(e);
+    });
+    this.cy.batch(() => {
+      this.cy.edges().removeClass("bidirectional");
+      pairs.forEach(edges => {
+        // Only handle the simple 1-in / 1-out case. If 3+ edges share the same
+        // unordered pair (rare), skip — they'll fall back to the overlap logic.
+        if (edges.length !== 2) return;
+        const aToB = edges.some(e => e.source().id() < e.target().id());
+        const bToA = edges.some(e => e.source().id() > e.target().id());
+        if (!aToB || !bToA) return;
+        // Same +40 on both edges → opposite sides of the A–B line, because the
+        // perpendicular is computed relative to each edge's own direction.
+        edges.forEach(e => e.addClass("bidirectional"));
       });
     });
   }
@@ -623,7 +648,6 @@ class Graph {
             type,
             area,
             notes,
-            stub: isNew ? true : !!(this.activeNode && this.activeNode.data("stub")),
             moves: finalMoves
           })
         });
